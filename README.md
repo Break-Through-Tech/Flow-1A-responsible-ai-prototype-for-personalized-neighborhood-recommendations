@@ -1,121 +1,130 @@
-# AI Studio Challenge Project Title
+# Responsible AI for Personalized Neighborhood Recommendations
 
-> 💡 **Note for the team:** This is just a template. Update the above title with your AI Studio Challenge Project name. Remove all guidance notes and example text in this template and populate this README with your own content. You can work on this README throughout AI Studio, and get feedback from your AI Studio Coach and Challenge Advisor before finalizing it.  
+**Break Through Tech AI Studio — Fall 2026**  
+**Affiliated org (BTT submission):** Flow  
+**Challenge Advisor:** Karla Reyes, AI Engineer @ Flow Miami ([k.reyes@outlook.com](mailto:k.reyes@outlook.com))
 
----
-
-### 👥 **Team Members**
-
-**Example:**
-
-| Name             | GitHub Handle | Contribution                                                             |
-|------------------|---------------|--------------------------------------------------------------------------|
-| Taylor Nguyen    | @taylornguyen | Data exploration, visualization, overall project coordination            |
-| Jordan Ramirez   | @jramirez     | Data collection, exploratory data analysis (EDA), dataset documentation  |
-| Amina Hassan     | @aminahassan  | Data preprocessing, feature engineering, data validation                 |
-| Priya Mehta      | @pmehta       | Model selection, hyperparameter tuning, model training and optimization  |
-| Chris Park       | @chrispark    | Model evaluation, performance analysis, results interpretation           |
+> **Independent project:** Concept and CA materials by **Karla Reyes, AI Engineer @ Flow Miami** — not a Flow corporate product. **Hosted by Challenge Advisor alone.** See **[ATTRIBUTION.md](ATTRIBUTION.md)**.
 
 ---
 
-## 🎯 **Project Highlights**
+## The idea, in plain terms
 
-**Example:**
+**For newcomers:** You're moving to Miami — maybe from NYC — and need the **right neighborhood** and **living setup** (e.g. your own apartment with a **co-leaser** on the lease in Wynwood, Downtown, or Brickell — not a co-living facility).
 
-- Developed a machine learning model using `[model type/technique]` to address `[challenge project task]`.
-- Achieved `[key metric or result]`, demonstrating `[value or impact]` for `[host company]`.
-- Generated actionable insights to inform business decisions at `[host company or stakeholders]`.
-- Implemented `[specific methodology]` to address industry constraints or expectations.
+**Illustrative business case:** A residential operator *could* use a **recommendation engine + LLM** to improve lease-up and retention. That scenario motivates the eval metrics — it is **not** a Flow-assigned product roadmap.
 
----
+This project builds that engine: match users to **3–5 neighborhoods** from budget, household, housing preference, and lifestyle — with an MCP-backed LLM that explains results without inventing listings.
 
-## 👩🏽‍💻 **Setup and Installation**
-
-**Provide step-by-step instructions so someone else can run your code and reproduce your results. Depending on your setup, include:**
-
-* How to clone the repository
-* How to install dependencies
-* How to set up the environment
-* How to access the dataset(s)
-* How to run the notebook or scripts
+> **Student team:** Sections marked *(your team fills this in)* are for your portfolio. Start with [Challenge-Project-Overview.md](Challenge-Project-Overview.md).
 
 ---
 
-## 🏗️ **Project Overview**
+## Example user stories
 
-**Describe:**
-
-- How this project is connected to the Break Through Tech AI Program
-- Your AI Studio host company and the project objective and scope
-- The real-world significance of the problem and the potential impact of your work
-
----
-
-## 📊 **Data Exploration**
-
-**You might consider describing the following (as applicable):**
-
-* The dataset(s) used: origin, format, size, type of data
-* Data exploration and preprocessing approaches
-* Insights from your Exploratory Data Analysis (EDA)
-* Challenges and assumptions when working with the dataset(s)
-
-**Potential visualizations to include:**
-
-* Plots, charts, heatmaps, feature visualizations, sample dataset images
+| Who | What they want | Illustrative operator impact |
+|-----|----------------|------------------------------|
+| **Couple from NYC** | Own apartment with a co-leaser | Faster lease decision → **occupancy** |
+| **Solo mover** | Own studio/1BR, no roommates | Better initial fit → **renewal** likelihood |
+| **Solo, wants community** | Co-living (optional path) | Fill appropriate inventory → **occupancy** |
 
 ---
 
-## 🧠 **Model Development**
+## What you'll build
 
-**You might consider describing the following (as applicable):**
+| Step | What happens |
+|------|----------------|
+| 1 | User enters budget, alone vs. with co-leaser, own apartment vs. co-living, and lifestyle priorities |
+| 2 | Recommender ranks ZIP codes — prioritizing **own apartment** matches for couples and solo movers |
+| 3 | NLP surfaces review themes (transit, social, co_living, etc.) |
+| 4 | MCP server + agent answer only from tool outputs |
 
-* Model(s) used (e.g., CNN with transfer learning, regression models)
-* Feature selection and Hyperparameter tuning strategies
-* Training setup (e.g., % of data for training/validation, evaluation metric, baseline performance)
+### Anchor neighborhoods (own apartment)
 
+| Area | ZIP | Why newcomers like it |
+|------|-----|------------------------|
+| **Wynwood** | 33127 | Creative, walkable, social — good for couples who want energy |
+| **Downtown Miami** | 33128 | Central, Metromover, easy commute |
+| **Brickell** | 33130 | Towers, Metrorail, restaurants, young professional vibe |
 
----
-
-## 📈 **Results & Key Findings**
-
-**You might consider describing the following (as applicable):**
-
-* Performance metrics (e.g., Accuracy, F1 score, RMSE)
-* How your model performed
-* Insights from evaluating model fairness
-
-**Potential visualizations to include:**
-
-* Confusion matrix, precision-recall curve, feature importance plot, prediction distribution, outputs from fairness or explainability tools
+Full details: [Challenge-Project-Overview.md](Challenge-Project-Overview.md)
 
 ---
 
-## 🚀 **Next Steps**
+## What's in this repo
 
-**You might consider addressing the following (as applicable):**
+| File or folder | What's inside |
+|----------------|---------------|
+| [Challenge-Project-Overview.md](Challenge-Project-Overview.md) | Full project brief |
+| [ATTRIBUTION.md](ATTRIBUTION.md) | **Read first** — ownership & independence |
+| [STAKEHOLDERS.md](STAKEHOLDERS.md) | Stakeholders & illustrative value prop |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Rec engine → MCP → LLM blueprint |
+| [EVAL_FRAMEWORK.md](EVAL_FRAMEWORK.md) | Metrics to prove the stack works |
+| [RESOURCES.md](RESOURCES.md) | Curated online resources |
+| [eval/](eval/) | Starter test profiles and routing prompts |
+| [data/](data/) | Starter dataset |
+| [data_dictionary.md](data_dictionary.md) | Column definitions |
+| [MCP_SETUP.md](MCP_SETUP.md) | MCP server guide |
 
-* What are some of the limitations of your model?
-* What would you do differently with more time/resources?
-* What additional datasets or techniques would you explore?
-
----
-
-## 📝 **License**
-
-Specify how your project can be used by others. Choose an appropriate license and link it here (e.g., MIT, Apache 2.0). Make sure your Challenge Advisor approves of the selected license type. 
-
-**Example:**
-This project is licensed under the MIT License.
-
----
-
-## 📄 **References** (Optional but encouraged)
-
-Cite relevant papers, articles, or resources that supported your project.
+**Reference prototype:** [Miami Newcomer Housing Explorer](https://github.com/karlarey/miami-newcomer-explorer)
 
 ---
 
-## 🙏 **Acknowledgements** (Optional but encouraged)
+## Get started locally
 
-Thank your Challenge Advisor, host company representatives, TA, and others who supported your project.
+```bash
+git clone https://github.com/Break-Through-Tech/Flow-Responsible_AI_Neighborhood_Recommendation.git
+cd Flow-Responsible_AI_Neighborhood_Recommendation
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Starter data is in [`data/`](data/). Key fields:
+
+| File | Key columns |
+|------|-------------|
+| `area_features.csv` | ZIP scores + `co_living_friendly` |
+| `area_options.csv` | `housing_preference` (`own_apartment` / `co_living`), `household` (`alone` / `with_co_leaser`) |
+| `crowd_text_snippets.csv` | Review themes by ZIP |
+
+---
+
+## 👥 Team members *(your team fills this in)*
+
+| Name | GitHub | What they worked on |
+|------|--------|---------------------|
+| | | |
+
+---
+
+## 🎯 Project highlights *(your team fills this in)*
+
+---
+
+## 📊 Data exploration *(your team fills this in)*
+
+---
+
+## 🧠 Model development *(your team fills this in)*
+
+---
+
+## 📈 Results *(your team fills this in)*
+
+---
+
+## 🚀 Next steps *(your team fills this in)*
+
+---
+
+## 📝 License
+
+MIT License — confirm with Challenge Advisor before final submission.
+
+---
+
+## 🙏 Acknowledgements
+
+- **Challenge Advisor:** Karla Reyes, AI Engineer @ Flow Miami
+- **Program:** Break Through Tech AI Studio, Fall 2026

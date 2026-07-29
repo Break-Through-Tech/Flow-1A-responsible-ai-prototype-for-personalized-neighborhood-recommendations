@@ -1,160 +1,238 @@
----
+# Responsible AI for Personalized Neighborhood Recommendations
 
-> ## Challenge Advisor: Update & Finalize Your Project Overview
->
-> > 💡 **These grey text instructions are just for you, the team's Challenge Advisor; please delete them once you have completed the steps below.**
->
-> We've pre-populated this Challenge Project Overview page — which is what will be shared with your Break Through Tech student team in August — using the details from your submission form. You should have received an email inviting you to join this repo as a Collaborator, enabling you to add files and make edits.
-> 
-> In order for your project to be finalized and assigned to a team, please:
-> 1. **Review all sections below** and update or expand any content as needed, making sure to address the SME Feedback in the section immediately below. Look for square brackets to find the places below that require additional inputs from you (e.g., "About [Company / Org Name]").
-> 2. **Add your dataset** to the [data folder](data) in this repo.
-> 3. **Close the Issue assigned to you in this repo** to let us know that you have made your edits and the overview page is ready for final review. You can do this by going to the _Issues_ tab in the top left section of the menu above, add a comment that says "CA review complete", and click the button to Close the Issue. 
->
-> If you're unfamiliar with how to edit a page like this in GitHub, check out [this tutorial](https://ubc-lib-geo.github.io/gis-workshop-waml-template/content/handson/edit-readme.html) for a quick overview (start with step 2 and only edit this page), and [this guide](https://ubc-lib-geo.github.io/gis-workshop-waml-template/content/markdown.html) on how to use Markdown to compose text.
->
->
-> ❌ Remember that this is a public repo. Do NOT include: Proprietary data, PII, API keys, credentials, or anything confidential.
+**Company / Org (BTT submission):** Flow  
+**Challenge Advisor:** Karla Reyes, AI Engineer @ Flow Miami · k.reyes@outlook.com  
+**Program:** Break Through Tech AI Studio — Fall 2026
+
+> **Attribution:** The **concept, architecture, and Challenge Advisor materials** are **independent work by Karla Reyes, AI Engineer @ Flow Miami**. Flow is listed as the affiliated org on the BTT submission only; **this project is hosted by the Challenge Advisor alone**. See **[ATTRIBUTION.md](ATTRIBUTION.md)**.
 
 ---
 
-## 📋 BTT Internal Evaluation Notes
-*(This section is for BTT staff only — remove before sharing with students)*
+## 🏢 Illustrative context — residential operators (e.g. Flow)
 
-| Check | Status | Notes |
-|-------|--------|-------|
-| Python Compatibility | 🟢| The tech stack is centered around Python, ensuring compatibility with the fellows' skill set in ML foundations. |
-| Data Readiness | 🟢| The data size is under 1GB, indicating it is manageable and presumably clean enough for use within a semester without extensive preprocessing. |
-| Resource Check | 🟢| Only requires the Google Colab free tier, which is accessible to all students and poses no additional hurdles. |
+*This section describes how a **residential operator could** use a system like the one students will build. It is **not** a Flow corporate product plan or an assigned Flow initiative.*
 
-**Student Fit Score:** 8/10  
-**Technical Depth Score:** 7/10  
-**Overall Recommendation:** REVISE
+Many operators care about **occupancy** and **renewals (retention)**. A grounded recommender could help prospects find the right fit faster — an **example** business case for this architecture:
 
-**Advisor Feedback Draft:**
-The project effectively leverages NLP and recommendation systems to provide individual experiences for newcomers in Miami, addressing a real pain point. However, to ensure the project meets its goals, focus on balancing the use of synthetic profiles with real-world data for better accuracy. Additionally, clarify how the measures of success will guide iterative improvements in the model. Consider these adjustments to maximize impact.
+| Business goal | What goes wrong today | How this project helps |
+|---------------|----------------------|-------------------------|
+| **Occupancy** | Prospects churn during a slow, confusing housing search | Personalize **3–5 neighborhood matches** faster → better fit → **lease signed sooner** |
+| **Renewals / retention** | Bad initial match → unhappy residents → move out at renewal | Match newcomers to the **right area and living setup** upfront → higher satisfaction → **residents stay** |
+| **Investor & lender confidence** | Hard to show differentiated, data-driven leasing | Responsible AI rec engine + LLM → measurable match quality → **stronger ops story** for capital partners |
 
----
+**End users** are newcomers (e.g. moving from NYC with a co-leaser, wanting their own apartment in Wynwood, Downtown, or Brickell — not a co-living facility). An operator **could** deploy an engine like this for lease-up and retention. **PE and lenders** (in this illustrative story) evaluate portfolio metrics — they are not app users.
 
-# Responsible AI for personalized recommendations
+### What students build (technical goal)
 
-**Company / Org:** Flow  
-**Challenge Advisor:** Karla Reyes, k.reyes@outlook.com  
-**Program:** Break Through Tech AI Studio - Fall 2026
+A **recommendation / personalization engine** connected to an **LLM via MCP**:
 
----
+```text
+Prospect preferences → Rec engine (rank ZIPs) → MCP tools → LLM (explain results)
+                              ↓
+                    Better match → occupancy ↑, renewals ↑
+```
 
-## 🏢 About Flow
+**What we won't do:** steer people by race or family status, score individual tenants, or show fake listings as if they're real.
 
-Flow specializes in delivering innovative solutions for personalized housing recommendations, focused on enhancing the experience for newcomers in the Miami area through advanced AI technologies.
+**Read next:** [STAKEHOLDERS.md](STAKEHOLDERS.md) (value proposition) · [ARCHITECTURE.md](ARCHITECTURE.md) (system design) · [EVAL_FRAMEWORK.md](EVAL_FRAMEWORK.md) (how to measure accuracy)
 
 ---
 
 ## 🎯 The Challenge
 
-### Project Summary
-In this project, you will use public Miami housing/migration data, crowd review text, and synthetic option profiles and NLP plus recommendation ML (similarity-based personalization) and an MCP-backed AI agent to deliver 3–5 personalized area recommendations for newcomers. This will help address slow, unstructured housing search for people moving to Miami without unsafe steering or real-time listing scraping.
+### The problem
 
-### Success Criteria
-Ranking quality (Precision@3 and Precision@5), Match quality (Mean cosine similarity), NLP theme coverage, tool grounding (answers must cite tool outputs only), and refusal rate for prohibited requests.
+For newcomers, housing search in Miami is overwhelming — listings are scattered and AI tools often invent facts. In an **illustrative operator scenario**, slow or mismatched search can hurt lease-up and retention. Your job is to build a **grounded personalization engine** that helps people find the right fit — with measurable quality via [EVAL_FRAMEWORK.md](EVAL_FRAMEWORK.md).
 
-### Project Milestones
+### What you'll build
 
-Use these milestones to guide your work. Your team will create a **GitHub Projects board** to track tasks within each milestone.
+A **neighborhood recommender for Miami newcomers**.
 
-| Month | Milestone | Key Activities |
-|-------|-----------|----------------|
-| **September** | Data Understanding | Explore dataset, handle missing values, document findings |
-| **October** | Model Development | Train baseline model, experiment with approaches, iterate |
-| **November** | Evaluation & Presentation | Finalize model, prepare presentation, document results |
+**Primary use case:**  
+*"I'm moving from NYC with a co-leaser. We want our own apartment on a private lease — not a co-living facility — in Wynwood, Downtown, or Brickell."*
 
-> **Note for the team:** Please create a GitHub Projects board in this repository to break these milestones into weekly tasks. Go to the **Projects** tab → **New project** → Choose **Board** → Add columns for each month.
+> **Co-leaser vs. co-living:** A **co-leaser** shares *your* private lease (partner, friend, etc.). **Co-living** is a separate housing preference for shared/stranger roommate setups — not the same thing.
+
+| Input | Options | Example |
+|-------|---------|---------|
+| **Household** | Alone or with co-leaser | With co-leaser |
+| **Housing preference** | **Own apartment** or **co-living** | Own apartment |
+| **Budget + lifestyle** | Rent max, transit, social, quiet, etc. | $2,500, transit + walkable |
+
+| Preference | Meaning |
+|------------|---------|
+| **Own apartment** | Private unit on your lease — studio, 1BR, or 2BR. Alone or with a **co-leaser**. Not a co-living facility. |
+| **Co-living** | Optional — shared housing / stranger roommates when you're alone and want that setup |
+
+> User chooses household and preference. Never infer relationship status from demographics.
+
+**Anchor neighborhoods (own apartment):**
+
+| Neighborhood | ZIP |
+|--------------|-----|
+| **Wynwood** | 33127 |
+| **Downtown Miami** | 33128 |
+| **Brickell** | 33130 |
+
+Your full system will:
+
+1. Take **budget**, **household**, **housing preference**, and **lifestyle tags**
+2. Recommend **3–5 ZIP codes** via ML similarity
+3. Surface **review themes** from crowd text
+4. Connect an **MCP-backed agent** (tool-grounded answers only)
+5. **Label synthetic demos** and refuse harmful requests
+
+### How we'll know it's working
+
+Measure **three layers** — see [EVAL_FRAMEWORK.md](EVAL_FRAMEWORK.md) and starter tests in [`eval/`](eval/).
+
+| Layer | Metric | Plain English |
+|-------|--------|---------------|
+| **1. Rec engine** | Precision@3 / @5 | Top ZIPs match advisor gold labels |
+| **1. Rec engine** | Mean cosine similarity | Recommendations fit stated preferences |
+| **2. MCP routing** | Tool selection accuracy | Agent calls `recommend` vs `area_stats` vs `ethics` correctly |
+| **3. LLM** | Tool grounding rate | Answers cite tool JSON only — no invented facts |
+| **3. LLM** | Refusal rate | Prohibited prompts refused ([eval/prohibited_prompts.json](eval/prohibited_prompts.json)) |
+| **NLP** | Theme coverage | Recommended ZIPs have relevant review themes |
+
+### Use metrics to improve — not just to report
+
+Don't wait until November to check these. Use them like a GPS:
+
+| When | What to do | If results are weak… |
+|------|------------|----------------------|
+| **September** | Build a simple baseline recommender | — |
+| **Early October** | Swap in stronger public data (Census, Zillow indices) | Recommendations feel random → upgrade features |
+| **Mid October** | Tune weights, filters, similarity approach | Top picks all look the same → adjust model |
+| **Late October** | Add NLP themes + MCP tools + agent | Agent makes up stats → enforce tool-only answers |
+| **November** | Test edge cases and fair-housing refusals | Agent says yes to bad requests → tighten ethics layer |
+| **End of semester** | Compare baseline vs. final; write it up in README | — |
+
+### Monthly milestones
+
+| Month | Focus | Your main tasks |
+|-------|-------|-----------------|
+| **September** | Understand the data | Explore CSVs, note what's real vs. demo, handle missing values, get a baseline score |
+| **October** | Build and improve the model | Better public data, recommender tuning, NLP themes, **MCP server** |
+| **November** | Evaluate and present | Run full [eval/](eval/) scorecard; presentation + README |
+
+> **Tip:** Create a GitHub Projects board in this repo. Add columns for September, October, and November. Break big tasks into weekly to-dos.
 
 ---
 
 ## 📊 Dataset
 
-**Name and Source:** Public snapshot datasets for Miami-Dade (census/ACS, rent benchmarks, migration indicators)  
-**Format:** CSV/TSV  
-**Size:** under 1gb  
-**Location:** [Link to dataset or instructions for accessing it]
+**Source:** Public Miami-Dade snapshots (Census, migration, rent indices) + starter demo files  
+**Format:** CSV  
+**Size:** Under 1 GB — easy to work with in Colab or locally  
+**Where:** [`data/`](data) folder in this repo
 
-### Key Details
-- Public snapshot datasets for Miami-Dade (census/ACS, rent benchmarks, migration indicators), synthetic area profiles, and public apartment/community text. Data is stored in CSV/TSV format and includes numerical, categorical, text, and time series data.
-- [Any known limitations or preprocessing needed]
-- [Link to data dictionary or documentation, if available]
+### Real data vs. demo data — why both?
 
----
+| File | Real or demo? | Why it's here |
+|------|---------------|---------------|
+| `miami_dade_public_features.csv` | **Real** | Actual public stats by ZIP — rent, population, migration |
+| `miami_dade_zctas.txt` | **Real** | List of Miami-Dade ZIP codes |
+| `area_features.csv` | **Mixed starter** | ZIP scores + `co_living_friendly`; anchor rows for **Wynwood (33127), Downtown (33128), Brickell (33130)** |
+| `crowd_text_snippets.csv` | **Demo** | Review themes including transit, social, co_living |
+| `area_options.csv` | **Synthetic only** | `housing_preference` (`own_apartment` / `co_living`), `household` (`alone` / `with_co_leaser`) — **NOT REAL LISTINGS** |
 
-## 🛠️ Suggested Approach
+**The plan:** Start with this mix so you can build fast. Over the semester, replace demo pieces with stronger public sources. The recommender should lean more on real data as you go.
 
-**ML Problem Type:** Recommendation ML (similarity-based personalization)
+### Good to know
 
-**Recommended Libraries:**
-- NLP
-- Recommendation ML (similarity-based personalization)
-- MCP-backed AI agent
-- Python
-- Gemini agent
-- Streamlit
-- Docker
+- Everything is **snapshots** — not live Zillow feeds or scraped listings
+- Some Census values show as `-666666666` when data is missing; decide how to handle that in cleaning
+- Any UI showing `area_options.csv` must say clearly that cards are demos
+- Column details: [`data_dictionary.md`](data_dictionary.md)
 
-**Evaluation Metrics:**
-- Precision@3
-- Precision@5
-- Mean cosine similarity
+### Data upgrades for October
 
----
-
-## 📚 Resources to Get Started
-
-The following resources will help your team understand the problem space and potential technical approaches for this project:
-
-**Background Reading:**
-- [e.g., Link to an article or blog post about the problem domain]
-- [e.g., Link to an industry report or case study]
-
-**Technical Tutorials:**
-- [e.g., Link to a free tutorial on the ML technique(s) involved]
-- [e.g., Link to documentation for a key library or tool]
-
-**Code Examples:**
-- [e.g., Link to a relevant GitHub repo]
-- [e.g., Link to a sample implementation or starter code]
-
-**Other:**
-- [Links to any additional resources — e.g., papers, videos, podcasts, etc.]
-
-*Feel free to explore beyond these, and share anything interesting you find with me!*
+- [Census API](https://www.census.gov/data/developers/data-sets.html) — fresher ACS pulls
+- [Zillow Research data](https://www.zillow.com/research/data/) — rent and home-value indices
+- [Kaggle apartment reviews](https://www.kaggle.com/datasets/teejmahis/apartment-reviews-on-googlemaps) — real review text filtered for Miami/FL
 
 ---
 
-## 🤝 How We'll Work Together
+## 🛠️ Suggested tools
 
-**Check-ins:** During our biweekly 60-min AI Studio Lab Section meeting block (2nd and 4th week of every month)  
-**Communication:** Slack (Break Through Tech workspace)  
-**Response time:** Within 48 hours on weekdays  
-
-**Recommended Tools:**
-- **Coding:** Google Colab
-- **Collaboration:** GitHub, Notion
-- **Virtual Meetings:** Zoom, Google Meet
+| Tool | What you'll use it for |
+|------|------------------------|
+| **Python** | Everything |
+| **pandas + scikit-learn** | Data prep and similarity-based recommendations |
+| **NLP** | Pulling themes from review text |
+| **Streamlit** | Simple demo app for users |
+| **Gemini + MCP** | AI agent that calls your tools (Gemini key optional) |
+| **Docker** | Optional — for reproducible deployment |
 
 ---
 
-## 🚀 Getting Started
+## 🔌 MCP server — what it is and why you need it
 
-1. **Review this overview document** and note any questions for our first meeting
-2. **Begin reviewing the dataset** using the link above
-3. **Read the GitHub Projects documentation** [here](https://docs.github.com/en/issues/planning-and-tracking-with-projects/learning-about-projects/about-projects)
+**MCP (Model Context Protocol)** is a standard way for an AI agent to call your code — like giving it a fixed set of reliable functions instead of letting it guess.
 
-I'm excited to work with you!
+Your team will build an MCP server with **five tools**:
+
+| Tool | What it does |
+|------|--------------|
+| `schema` | "Here are the columns in our dataset." |
+| `area_stats` | "Here are the stats for this ZIP (or all ZIPs)." |
+| `crowd_themes` | "Here's what people say about transit, quiet, etc. in this ZIP." |
+| `recommend` | "Given budget, household, housing preference, and lifestyle tags — top neighborhoods." |
+| `ethics` | "Here's what this tool is allowed and not allowed to do." |
+
+**Why it matters:** If the agent can only speak through these tools, it's much harder for it to invent a $1,200 Brickell apartment that doesn't exist. That's your **tool grounding rate**.
+
+**See it working:** [Miami Newcomer Housing Explorer](https://github.com/karlarey/miami-newcomer-explorer)  
+**Setup guide:** [MCP_SETUP.md](MCP_SETUP.md)
+
+---
+
+## 🛡️ Responsible AI — non-negotiables
+
+- **Neighborhoods, not people** — recommend areas, never score tenants or applicants
+- **User picks preferences** — no steering by race, ethnicity, or family status
+- **Label fake listings** — `area_options.csv` is for demos only
+- **No live scraping** — use public snapshots, not real-time rental site crawlers
+- **Say no when you should** — refuse tenant scoring, demographic filtering, or anything that breaks fair housing spirit
+
+---
+
+## 📚 Online resources
+
+Full curated list: **[RESOURCES.md](RESOURCES.md)** — Miami data, ML/rec-sys, NLP, MCP/LLM, responsible AI, proptech context, and collaboration tools.
+
+**Start here:**
+- [STAKEHOLDERS.md](STAKEHOLDERS.md) · [ARCHITECTURE.md](ARCHITECTURE.md) · [EVAL_FRAMEWORK.md](EVAL_FRAMEWORK.md)
+- [Miami Newcomer Housing Explorer](https://github.com/karlarey/miami-newcomer-explorer) (reference code)
+- [Census ACS](https://www.census.gov/programs-surveys/acs) · [Zillow Research](https://www.zillow.com/research/data/) · [MCP docs](https://modelcontextprotocol.io/)
+
+---
+
+## 🤝 Working together
+
+**Check-ins:** Biweekly during AI Studio Lab (2nd and 4th week of each month)  
+**Chat:** Slack (Break Through Tech workspace)  
+**I'll reply within:** 48 hours on weekdays  
+
+**Tools we recommend:** Google Colab or local Python, GitHub, Notion, Zoom/Meet
+
+---
+
+## 🚀 Your first week
+
+1. Read this doc and write down questions
+2. Open the [`data/`](data) folder and skim the CSVs
+3. Create your GitHub Projects board
+4. Build a simple baseline recommender and record your first scores
+5. Read [MCP_SETUP.md](MCP_SETUP.md) and try the reference prototype
+
+Looking forward to working with you!
 
 ---
 
 ## ❓ Questions?
 
-Please bring any questions to our first meeting during the week of August 24th (Break Through Tech's Bridge to Studio - Session B).
-
+Bring them to our first meeting — week of **August 24th** (Bridge to Studio, Session B).
 
 ---
