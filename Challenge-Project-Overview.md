@@ -2,6 +2,7 @@
 
 **Company / Org (BTT submission):** Flow  
 **Challenge Advisor:** Karla Reyes, AI Engineer @ Flow Miami · k.reyes@outlook.com  
+**AI Studio Coach:** Harshini Donepudi, harshini.donepudi@breakthroughtech.com
 **Program:** Break Through Tech AI Studio — Fall 2026
 
 > **Attribution:** The **concept, architecture, and Challenge Advisor materials** are **independent work by Karla Reyes, AI Engineer @ Flow Miami**. Flow is listed as the affiliated org on the BTT submission only; **this project is hosted by the Challenge Advisor alone**. See **[ATTRIBUTION.md](ATTRIBUTION.md)**.
