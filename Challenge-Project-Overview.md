@@ -213,7 +213,7 @@ Full curated list: **[RESOURCES.md](RESOURCES.md)** — Miami data, ML/rec-sys, 
 ## 🤝 Working together
 
 **Check-ins:** Biweekly during AI Studio Lab (2nd and 4th week of each month)  
-**Chat:** Slack (Break Through Tech workspace)  
+**Chat:** Discord (Break Through Tech workspace)  
 **I'll reply within:** 48 hours on weekdays  
 
 **Tools we recommend:** Google Colab or local Python, GitHub, Notion, Zoom/Meet
@@ -234,6 +234,6 @@ Looking forward to working with you!
 
 ## ❓ Questions?
 
-Bring them to our first meeting — week of **August 24th** (Bridge to Studio, Session B).
+Bring them to our first meeting — week of **August 24th** (Bridge to Studio, Session C).
 
 ---
