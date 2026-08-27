@@ -4,11 +4,9 @@ Students must prove the **whole architecture** works — not just that the chatb
 
 Evaluate **three layers**:
 
-```text
-Layer 1: Recommendation engine   → Are ZIP rankings correct?
-Layer 2: MCP / tool routing        → Does the agent call the right tool?
-Layer 3: LLM response            → Are answers grounded and refusals correct?
-```
+**Layer 1 — Recommendation engine:** Are ZIP rankings correct?
+**Layer 2 — MCP / tool routing:** Does the agent call the right tool?
+**Layer 3 — LLM response:** Are answers grounded and refusals correct?
 
 Starter test cases live in [`eval/`](eval/).
 
@@ -32,14 +30,6 @@ Starter test cases live in [`eval/`](eval/).
 2. Run your `recommend` logic for each profile
 3. Compare top-k ZIPs to `expected_relevant_zips`
 4. Log baseline (September) vs. final (November)
-
-**Example:**
-
-```text
-Profile: co-leaser + own_apartment + $2500 + transit + walkable
-Expected relevant: 33130, 33128, 33127
-Top 3: 33130, 33128, 33132 → Precision@3 = 2/3
-```
 
 ---
 

@@ -6,29 +6,9 @@
 
 ## High-level flow
 
-```text
-┌────────────────┐
-│ Prospect / User│  natural language + preferences (budget, household, tags)
-└───────┬────────┘
-        ▼
-┌────────────────┐
-│   LLM Agent    │  explains results, refuses bad requests — DOES NOT rank ZIPs
-│   (Gemini)     │
-└───────┬────────┘
-        │ calls tools only
-        ▼
-┌────────────────┐
-│  MCP Server    │  schema, recommend, area_stats, crowd_themes, ethics
-└───────┬────────┘
-        │
-        ├──────────────────┐
-        ▼                  ▼
-┌────────────────┐  ┌─────────────┐
-│ Rec Engine     │  │ Data + NLP  │
-│ (Python/ML)    │  │ CSV + themes│
-│ cosine + filters│  └─────────────┘
-└────────────────┘
-```
+The system has four layers that work together. Your team decides how to implement each one.
+
+User preferences flow into a recommendation engine that ranks neighborhoods. Those rankings are exposed through an MCP server as structured tools. An LLM agent calls those tools and narrates the results — it never ranks or invents facts on its own.
 
 ---
 
@@ -64,22 +44,13 @@ Setup details: [MCP_SETUP.md](MCP_SETUP.md)
 
 Study (do not copy blindly): [Miami Newcomer Housing Explorer](https://github.com/karlarey/miami-newcomer-explorer)
 
-| File | Layer |
-|------|-------|
-| `src/recommender.py` | Rec engine |
-| `src/tools.py` | Shared tool logic |
-| `src/mcp_server.py` | MCP |
-| `src/agent.py` | LLM integration |
-
-**Your deliverable:** Implement your version in **this repo** with tests from [eval/](eval/) and metrics in [EVAL_FRAMEWORK.md](EVAL_FRAMEWORK.md).
+**Your deliverable:** Implement your version in **this repo** with tests from [eval/](eval/) and metrics in [EVAL_FRAMEWORK.md](EVAL_FRAMEWORK.md). How you structure your code is part of the challenge.
 
 ---
 
 ## Business link *(illustrative operator scenario)*
 
-```text
-Better rec match → faster lease (occupancy ↑) → happier resident → renewal (↑)
-```
+A better recommendation match leads to a faster lease decision (occupancy up), a happier resident, and a higher renewal rate.
 
 Not a Flow corporate initiative — **hosted by Challenge Advisor alone**. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
@@ -87,19 +58,10 @@ Stakeholder detail: [STAKEHOLDERS.md](STAKEHOLDERS.md)
 
 ---
 
-## Installation (quick start)
-
-```bash
-git clone https://github.com/Break-Through-Tech/Flow-Responsible_AI_Neighborhood_Recommendation.git
-cd Flow-Responsible_AI_Neighborhood_Recommendation
-python -m venv .venv
-.venv\Scripts\activate          # Windows
-pip install -r requirements.txt
-```
+## Getting started
 
 1. Explore `data/` and [data_dictionary.md](data_dictionary.md)
-2. Study reference prototype MCP server
-3. Build `src/` in this repo (students)
-4. Run eval fixtures in [eval/](eval/) (students)
-
-Optional: `copy .env.example .env` and set `GEMINI_API_KEY` for live agent.
+2. Study the reference prototype to understand how the layers connect
+3. Build your implementation in this repo
+4. Run eval fixtures in [eval/](eval/)
+5. Set your LLM API key via `.env.example` when you're ready to connect the agent

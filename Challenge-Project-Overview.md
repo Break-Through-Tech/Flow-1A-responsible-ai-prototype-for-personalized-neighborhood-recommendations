@@ -25,13 +25,7 @@ Many operators care about **occupancy** and **renewals (retention)**. A grounded
 
 ### What students build (technical goal)
 
-A **recommendation / personalization engine** connected to an **LLM via MCP**:
-
-```text
-Prospect preferences → Rec engine (rank ZIPs) → MCP tools → LLM (explain results)
-                              ↓
-                    Better match → occupancy ↑, renewals ↑
-```
+A **recommendation / personalization engine** connected to an **LLM via MCP**. User preferences flow into a rec engine that ranks ZIPs, MCP tools expose those rankings to the agent, and the LLM explains results — grounded in tool output only.
 
 **What we won't do:** steer people by race or family status, score individual tenants, or show fake listings as if they're real.
 
