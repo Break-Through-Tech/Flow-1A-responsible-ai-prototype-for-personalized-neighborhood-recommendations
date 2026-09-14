@@ -1,7 +1,20 @@
-pandas>=2.1.0
-numpy>=1.26.0
-scikit-learn>=1.4.0
-streamlit>=1.32.0
-google-genai>=1.0.0
-mcp>=1.0.0
-requests>=2.31.0
+# Core data / ML
+pandas==3.0.5
+numpy==2.4.6
+scikit-learn==1.9.1
+
+# UI
+streamlit==1.63.0
+
+# LLM + MCP
+google-genai==2.23.0
+mcp==2.2.0
+
+# HTTP
+requests==2.34.2
+
+# Notebooks
+jupyter==1.1.1
+ipykernel==7.3.0
+
+# NOTE: no embeddings library pinned yet: needed for October NLP work (Task #15).
