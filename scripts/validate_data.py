@@ -10,19 +10,20 @@ class validate_data:
 
     # Prints the names of all CSV files in the data folder
     def listFileNames(self):
-        print('cvs files:')
-        for i in self.list_paths:
-            print(i.replace('data\\', ''))
+        print('CSV files:')
+        for i in range(len(self.pd_arr)):
+            name = os.path.basename(self.list_paths[i])
+            print(name)
 
     # Prints the number of rows, columns, and data types for each CSV file
     def listInfo(self):
         print('--------------------------')
         for i in range(len(self.pd_arr)):
-            name = self.list_paths[i].replace('data\\', '')
+            name = os.path.basename(self.list_paths[i])
             print(name + ': ')
-            print('Columns: ', self.pd_arr[i].shape[0]) 
-            print('Rows ', self.pd_arr[i].shape[1])
-            print('Data Type: \n', self.pd_arr[i].dtypes.unique())
+            print('\tColumns: ', self.pd_arr[i].shape[1]) 
+            print('\tRows: ', self.pd_arr[i].shape[0])
+            print('Data Type: \n', self.pd_arr[i].dtypes)
             print()
 
     ## checks that the following zip codes are found in each file
@@ -32,8 +33,12 @@ class validate_data:
         zipCode = [33127, 33128, 33130]
         for i in range(len(self.list_paths)):
             df = self.pd_arr[i]
-            name = self.list_paths[i].replace('data\\', '')
-            print(name, df['zip'].isin(zipCode).any())
+            name = os.path.basename(self.list_paths[i])
+            found = set()
+            for i in df['zip']:
+                if i in zipCode:
+                    found.add(i)
+            print(name, " ", len(found) == len(zipCode))
             
 
 
