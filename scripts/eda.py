@@ -29,6 +29,12 @@ FIGURES_DIR = ROOT / "notebooks" / "figures"
 
 ANCHOR_ZIPS = {"33127": "Wynwood", "33128": "Downtown", "33130": "Brickell"}
 
+# ACS top-codes owner-occupied home value at $2,000,000 and encodes it as
+# 2000001. Unlike the suppression sentinel this is a plausible-looking number,
+# so it passes every range check and silently caps the top of the
+# distribution. Pass it to find_suppressed_cells() as the sentinel to locate.
+TOP_CODED_VALUE = 2000001
+
 # Validated categorical palette (see dataviz skill, references/palette.md).
 # Fixed slot order is the CVD-safety mechanism, never cycled or reassigned.
 CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]  # blue, orange, aqua, yellow
