@@ -1,14 +1,14 @@
 """Reusable EDA checks and chart builders for Task #4.
 
 Each check is independently testable and callable from the notebook or a plain
-Python shell — covers inspection, summary stats, missingness, distributions,
+Python shell, covers inspection, summary stats, missingness, distributions,
 correlation/redundancy, and the anchor-ZIP-specific checks Task #4 asks for.
 
 The loader pins `zip` to str at read time so a leading-zero ZIP or an
-int/str mismatch can never silently break a join or a set comparison - just in case.
-`notebooks/Flow-1A-project-notebook.ipynb` reads the same CSVs without that
-dtype pin (relying on ANCHOR_ZIPS as ints), which works only because no
-Miami-Dade ZIP in this dataset has a leading zero.
+int/str mismatch can never silently break a join or a set comparison.
+The notebook's Task #2/#3 cells predate this module and read the same CSVs
+with plain read_csv, so their `zip` is int64. The two halves never join to
+each other, but any future merge across that line has to cast first.
 """
 
 from __future__ import annotations
@@ -29,8 +29,8 @@ FIGURES_DIR = ROOT / "notebooks" / "figures"
 
 ANCHOR_ZIPS = {"33127": "Wynwood", "33128": "Downtown", "33130": "Brickell"}
 
-# Validated categorical palette (see dataviz skill, references/palette.md) —
-# fixed slot order is the CVD-safety mechanism, never cycled or reassigned.
+# Validated categorical palette (see dataviz skill, references/palette.md).
+# Fixed slot order is the CVD-safety mechanism, never cycled or reassigned.
 CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]  # blue, orange, aqua, yellow
 SEQUENTIAL_BLUE = "#2a78d6"
 DIVERGING_BLUE, DIVERGING_GRAY, DIVERGING_RED = "#184f95", "#f0efec", "#e34948"
@@ -62,7 +62,7 @@ def load_data(data_dir: Path | None = None) -> DataBundle:
 def describe_numeric(df: pd.DataFrame) -> pd.DataFrame:
     """Standard describe() table (count/mean/std/min/quartiles/max), transposed to one row per column.
 
-    Column order matches df, not alphabetical — easier to scan against the
+    Column order matches df, not alphabetical: easier to scan against the
     data dictionary while reading top to bottom.
     """
     numeric = df.select_dtypes(include="number")
@@ -72,7 +72,7 @@ def describe_numeric(df: pd.DataFrame) -> pd.DataFrame:
 def missingness_report(df: pd.DataFrame) -> pd.DataFrame:
     """Per-column dtype, missing count/pct, and unique-value count.
 
-    Genuine NaNs only — the Census suppression sentinel (-666666666) is a
+    Genuine NaNs only. The Census suppression sentinel (-666666666) is a
     valid-looking int, not a NaN, so it never shows up here; see
     find_suppressed_cells() for that check instead.
     """
@@ -115,7 +115,7 @@ def find_suppressed_cells(
     """Which numeric columns still carry the raw Census sentinel, and in which ZIPs.
 
     Unlike scripts/clean_data.py (which only ever runs against
-    miami_dade_public_features.csv), this takes any DataFrame — so it can
+    miami_dade_public_features.csv), this takes any DataFrame, so it can
     also catch the sentinel surviving in a file clean_data.py never touches,
     such as area_features.csv.
     """
@@ -131,13 +131,13 @@ def find_suppressed_cells(
 
 
 def constant_columns(df: pd.DataFrame, tol: float = 1e-9) -> list[str]:
-    """Numeric columns with ~zero variance — dead weight in any similarity feature set."""
+    """Numeric columns with ~zero variance, dead weight in any similarity feature set."""
     numeric = df.select_dtypes(include="number")
     return [col for col in numeric.columns if numeric[col].std(skipna=True) <= tol]
 
 
 def near_constant_columns(df: pd.DataFrame, tol: float = 1e-3) -> pd.DataFrame:
-    """Numeric columns whose middle 90% spans less than `tol` — degenerate in practice.
+    """Numeric columns whose middle 90% spans less than `tol`, degenerate in practice.
 
     Uses the 5th-95th percentile spread rather than std, because std is the
     wrong instrument here: a column can be constant across the bulk of its
@@ -180,7 +180,7 @@ def exact_duplicate_columns(df: pd.DataFrame) -> list[tuple[str, str]]:
 def correlated_pairs(df: pd.DataFrame, threshold: float = 0.7) -> pd.DataFrame:
     """Numeric column pairs at or above |r| >= threshold.
 
-    Drops constant columns first — pandas' .corr() returns NaN for them, and
+    Drops constant columns first: pandas' .corr() returns NaN for them, and
     silently dropping NaN correlations would hide a "no signal at all"
     column behind a "not correlated" report row.
     """
@@ -215,7 +215,7 @@ def anchor_zip_profile(
 
 
 def theme_totals(crowd_text: pd.DataFrame) -> pd.DataFrame:
-    """Snippet count per theme, across all ZIPs — flags a thin or lopsided NLP corpus."""
+    """Snippet count per theme, across all ZIPs, flags a thin or lopsided NLP corpus."""
     return (
         crowd_text.groupby("theme")
         .size()
@@ -293,7 +293,7 @@ def save_fig(fig: Figure, name: str, out_dir: Path | None = None) -> Path:
 def plot_numeric_distributions(
     df: pd.DataFrame, columns: list[str], title: str, ncols: int = 4
 ) -> Figure:
-    """Small-multiples histogram grid — one panel per numeric column, same sequential hue throughout.
+    """Small-multiples histogram grid, one panel per numeric column, same sequential hue throughout.
 
     A general-purpose distributions view (every column, not just rent), so a
     teammate scanning this can see each feature's range and shape before
@@ -323,7 +323,7 @@ def plot_numeric_distributions(
 def plot_correlation_heatmap(
     df: pd.DataFrame, title: str, annotate: bool = True
 ) -> Figure:
-    """Diverging correlation matrix — a matrix of r-values is a polarity job (-1..0..+1), not a magnitude one."""
+    """Diverging correlation matrix, a matrix of r-values is a polarity job (-1..0..+1), not a magnitude one."""
     numeric = df.select_dtypes(include="number").drop(
         columns=constant_columns(df), errors="ignore"
     )
@@ -363,7 +363,7 @@ def plot_rent_distribution(
 ) -> Figure:
     """Where the anchor ZIPs sit within the full median-rent distribution.
 
-    Excludes the suppression sentinel first — otherwise a single -666666666
+    Excludes the suppression sentinel first, otherwise a single -666666666
     cell would collapse the histogram's x-axis around one outlier bin.
     """
     clean = df[df["median_rent_usd"] != sentinel]
@@ -377,7 +377,7 @@ def plot_rent_distribution(
     )
     # Anchor rents can land close together (Wynwood/Downtown are ~$90 apart),
     # so labels are stacked at staggered heights, in rent order, rather than
-    # all pinned to the same y — otherwise close values collide and overlap.
+    # all pinned to the same y: otherwise close values collide and overlap.
     color_by_zip = {z: CATEGORICAL[i % len(CATEGORICAL)] for i, z in enumerate(anchors)}
     present = [
         (zip_code, label, clean.loc[clean["zip"] == zip_code, "median_rent_usd"].iloc[0])
@@ -441,7 +441,7 @@ def plot_anchor_lifestyle_comparison(
 
 
 def plot_theme_totals(crowd_text: pd.DataFrame) -> Figure:
-    """Horizontal bar of NLP snippet counts per theme, sorted low to high — flags the thin/lopsided corpus."""
+    """Horizontal bar of NLP snippet counts per theme, sorted low to high, flags the thin/lopsided corpus."""
     totals = theme_totals(crowd_text).sort_values("snippet_count")
     fig, ax = _new_figure((6.5, 4))
     bars = ax.barh(totals["theme"], totals["snippet_count"], color=SEQUENTIAL_BLUE)
@@ -463,7 +463,7 @@ def plot_anchor_tenure_mix(
     owner_col: str = "B25003_002E",
     renter_col: str = "B25003_003E",
 ) -> Figure:
-    """Stacked bar: owner- vs renter-occupied share per anchor ZIP — the demographic-proxy risk finding."""
+    """Stacked bar: owner- vs renter-occupied share per anchor ZIP, the demographic-proxy risk finding."""
     subset = public_features[public_features["zip"].isin(anchors)].copy()
     subset["area_label"] = subset["zip"].map(anchors)
     total = subset[owner_col] + subset[renter_col]
@@ -519,7 +519,7 @@ def main() -> None:
     print(constant_columns(bundle.area_features) or "none")
 
     # Run against the cleaned file too: that's what Task #5/#6 read, and
-    # `walkable` is degenerate in *both* — cleaning median_rent_usd doesn't
+    # `walkable` is degenerate in *both*: cleaning median_rent_usd doesn't
     # recompute the column that was derived from it.
     clean_area = pd.read_csv(DATA_DIR / "area_features_clean.csv", dtype={"zip": str})
     print("\n=== Near-constant columns (middle 90% spans < 1e-3) ===")
