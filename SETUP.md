@@ -70,3 +70,32 @@ The starter data in `data/` has been audited, cleaned of Census suppression sent
   It lists each CSV in `data/`, prints shape/dtypes, and confirms all three anchor ZIPs are present in every file.
 
 The closing "Takeaways for Task #5 and Task #6" cell of the notebook summarizes what Task #4 found: `walkable` is a sentinel artifact rather than a real feature and must be recomputed or dropped, `pet_friendly` is constant, several feature pairs are redundant, tenure mix carries demographic-proxy risk, and the NLP corpus is thin. Read it before starting Task #5 (feature schema). Several of these need a decision before that work begins.
+
+## 7. Feature vector schema (Task #5)
+
+Task #5 defines which columns are used for similarity, how the selected features are scaled, and how user preferences map to dataset columns.
+
+- **`scripts/feature_schema.py`**: contains the reusable feature schema, preference-to-column mapping, and validation helpers for the baseline recommender.
+- **`FEATURE_SCHEMA.md`**: documents the feature-selection decisions, scaling approach, tag mapping, validation results, and handoff notes for Task #6.
+
+The baseline uses `transit`, `social`, and `quiet` as similarity features. `co_living_friendly` is added only when the user selects `co_living`.
+
+Budget is handled separately as a hard filter using `median_rent_usd`; it is not part of the similarity vector.
+
+Task #4 found that the current `walkable` and `pet_friendly` columns do not provide usable baseline signals, so those preferences remain recognized but are not scored.
+
+### Validate the schema
+
+From the repo root:
+
+```bash
+python -c "import pandas as pd; from scripts.feature_schema import validate_feature_schema; df=pd.read_csv('data/area_features_clean.csv'); validate_feature_schema(df); print('Feature schema validation passed')"
+```
+
+Expected output:
+
+```text
+Feature schema validation passed
+```
+
+Before starting Task #6, read `FEATURE_SCHEMA.md` and use `scripts/feature_schema.py` rather than redefining the feature rules.
