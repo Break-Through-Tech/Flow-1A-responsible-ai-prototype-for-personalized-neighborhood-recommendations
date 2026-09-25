@@ -17,14 +17,15 @@ CONDITIONAL_FEATURES = {
 VALID_HOUSING_PREFERENCES = {"own_apartment", "co_living"}
 
 # Map each user lifestyle tag to its similarity column.
-# walkable and pet_friendly stay recognized inputs, but they are not scored in the baseline
-# because Task #4 found their current data unusable.
+# walkable and pet_friendly stay recognized inputs but are not scored because
+# their current data is unusable. co_living is handled through housing_preference.
 TAG_TO_COLUMN = {
     "transit": "transit",
     "social": "social",
     "quiet": "quiet",
     "walkable": None,
     "pet_friendly": None,
+    "co_living": None,
 }
 
 # Budget is a hard filter, not part of the similarity vector. Task #6 should use median_rent_usd 

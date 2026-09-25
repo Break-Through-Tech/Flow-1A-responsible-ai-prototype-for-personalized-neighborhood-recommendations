@@ -219,6 +219,7 @@ The baseline mapping is:
 | `quiet` | `quiet` | Supported |
 | `walkable` | None | Recognized, but not scored in the baseline |
 | `pet_friendly` | None | Recognized, but not scored in the baseline |
+| `co_living` tag | None | Recognized, but handled through `housing_preference` |
 | `housing_preference = "co_living"` | `co_living_friendly` | Added conditionally once |
 
 ### Supported lifestyle tags
@@ -326,6 +327,7 @@ intentional invalid inputs.
 | Similarity value outside 0–1 raises `ValueError` | Passed |
 | Missing similarity value raises `ValueError` | Passed |
 | `python -m py_compile scripts/feature_schema.py` | Passed |
+| All five official `eval/recommendation_profiles.json` profiles map successfully | Passed |
 
 Failure tests were performed on temporary in-memory copies of the data. The
 source CSV files were not modified.
