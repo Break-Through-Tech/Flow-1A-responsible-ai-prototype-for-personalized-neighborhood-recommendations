@@ -118,13 +118,6 @@ def categorical_summary(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
 def find_suppressed_cells(
     df: pd.DataFrame, sentinel: int = SUPPRESSED_VALUE
 ) -> pd.DataFrame:
-    """Which numeric columns still carry the raw Census sentinel, and in which ZIPs.
-
-    Unlike scripts/clean_data.py (which only ever runs against
-    miami_dade_public_features.csv), this takes any DataFrame, so it can
-    also catch the sentinel surviving in a file clean_data.py never touches,
-    such as area_features.csv.
-    """
     numeric_cols = df.select_dtypes(include="number").columns
     rows = []
     for col in numeric_cols:
