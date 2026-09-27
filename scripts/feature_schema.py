@@ -40,10 +40,26 @@ SCALING_METHOD = "pre_normalized_0_1"
 ID_COLUMN = "zip"
 DISPLAY_COLUMN = "area_name"
 
-def get_similarity_features(tags: list[str], housing_preference: str) -> list[str]:
-    """Return the similarity columns to use for a user's preferences. 
+def get_vector_features(housing_preference: str) -> list[str]:
+    """Return the full feature dimensions for the user's similarity vector.
 
-    Only tags with usable features are added. Tags with no usable baseline feature
+    Base features are always included so cosine similarity uses a fixed set of
+    dimensions. co_living_friendly is added only for co-living users.
+    """
+    if housing_preference not in VALID_HOUSING_PREFERENCES:
+        raise ValueError(f"Unknown housing preference: {housing_preference}")
+
+    features = BASE_FEATURES.copy()
+
+    if housing_preference in CONDITIONAL_FEATURES:
+        features.append(CONDITIONAL_FEATURES[housing_preference])
+
+    return features
+
+def get_active_features(tags: list[str], housing_preference: str) -> list[str]:
+    """Return the usable similarity features active for this user. 
+
+    Only tags with usable features are added. Tags without a usable baseline feature
     are skipped. If the user chooses co_living, co_living_friendly is also added, but 
     only once and as a conditional feature.
     """

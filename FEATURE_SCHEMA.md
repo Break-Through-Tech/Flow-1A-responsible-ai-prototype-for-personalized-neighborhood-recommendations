@@ -281,17 +281,42 @@ The same rule applies to housing preferences. The supported values are
 
 The schema is implemented in `scripts/feature_schema.py`.
 
-### `get_similarity_features()`
+### `get_vector_features()`
 
-This function takes the user's lifestyle tags and housing preference and returns
-the feature columns that should be used for similarity.
+`get_vector_features()` returns the full set of feature dimensions that should
+be used to build the cosine-similarity vectors.
 
-It also:
+The base dimensions are always:
 
-- skips recognized preferences that do not have a usable baseline feature
-- adds `co_living_friendly` once when co-living is selected
-- rejects unknown or misspelled lifestyle tags
-- rejects unknown housing preferences
+- `transit`
+- `social`
+- `quiet`
+
+For `co_living`, `co_living_friendly` is added as an additional dimension.
+
+Keeping the full dimensions prevents profiles with only one usable selected
+preference from being reduced to a one-dimensional cosine comparison.
+
+### `get_active_features()`
+
+`get_active_features()` returns the usable features that are actually active
+for the user's selected preferences.
+
+For example:
+
+- `["transit", "walkable"]` with `own_apartment`
+  → `["transit"]`
+- `["social", "walkable"]` with `own_apartment`
+  → `["social"]`
+- `["co_living", "transit"]` with `co_living`
+  → `["transit", "co_living_friendly"]`
+
+Recognized preferences without a usable baseline signal are skipped, while
+unknown or misspelled inputs raise a `ValueError`.
+
+For cosine similarity, Task 6 should use `get_vector_features()` for the full
+vector dimensions and `get_active_features()` to determine which dimensions
+receive user preference weight.
 
 ### `validate_feature_schema()`
 
@@ -327,7 +352,7 @@ intentional invalid inputs.
 | Similarity value outside 0–1 raises `ValueError` | Passed |
 | Missing similarity value raises `ValueError` | Passed |
 | `python -m py_compile scripts/feature_schema.py` | Passed |
-| All five official `eval/recommendation_profiles.json` profiles map successfully | Passed |
+| All five official profiles return the expected vector dimensions and active features | Passed |
 
 Failure tests were performed on temporary in-memory copies of the data. The
 source CSV files were not modified.
@@ -339,10 +364,10 @@ source CSV files were not modified.
 Task #5 defines the feature contract used by the baseline recommender.
 
 - Read `data/area_features_clean.csv`, not the raw `area_features.csv`.
-- Use `median_rent_usd` as the hard budget filter. Do not include budget in
-  cosine similarity.
-- Use `get_similarity_features(tags, housing_preference)` to get the active
-  similarity columns.
+- Use `median_rent_usd` as the hard budget filter. Do not include budget in cosine similarity.
+- Use `get_vector_features(housing_preference)` to get the full cosine-vector dimensions.
+- Use `get_active_features(tags, housing_preference)` to determine which of those dimensions are active for the user.
+- Build the user vector over the full dimensions rather than reducing cosine similarity to only the active columns. For the baseline, active dimensions receive user preference weight and inactive dimensions receive `0`.
 - `transit`, `social`, and `quiet` are the baseline similarity features.
 - Add `co_living_friendly` only when `housing_preference = "co_living"`, and
   only once.
