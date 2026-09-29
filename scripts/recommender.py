@@ -1,9 +1,3 @@
-"""Baseline neighborhood recommender (Task #6).
-
-Ranks affordable ZIPs by cosine similarity. Feature dimensions, active
-preferences, and dataset checks come from Task #5 (scripts/feature_schema.py).
-"""
-
 import math  
 import sys  
 from pathlib import Path  
@@ -137,6 +131,11 @@ def build_area_matrix(candidates: pd.DataFrame, vector_features: list[str]) -> n
     return candidates.loc[:, vector_features].to_numpy(dtype=float)  # ZIP feature values in the same order
 
 
+# Baseline limitation:
+# Cosine similarity uses the full fixed-dimensional candidate vector.
+# Therefore, features the user did not select can still affect the
+# candidate vector's norm and influence the final similarity score.
+# This matches the current reference baseline and may be revisited later.
 def cosine_similarities(user_vector: np.ndarray, area_matrix: np.ndarray) -> np.ndarray:
     """Cosine similarity between the user vector and each candidate row."""
     user_norm = float(np.linalg.norm(user_vector))  # length of the user vector
