@@ -165,6 +165,18 @@ def near_constant_columns(df: pd.DataFrame, tol: float = 1e-3) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["column", "p5_p95_spread", "full_range", "dominant_value_share"])
 
 
+def drop_sentinels(df: pd.DataFrame) -> pd.DataFrame:
+    """Replace the suppression sentinel with NaN so correlations skip those cells.
+
+    Correlating the raw frame lets a single sentinel row act as an extreme
+    leverage point: median_rent_usd vs zillow_home_value_index reads -0.902
+    raw and +0.587 with the sentinel dropped.
+    """
+    numeric = df.select_dtypes(include="number")
+    masked = {c: numeric[c].mask(numeric[c] == SUPPRESSED_VALUE) for c in numeric.columns}
+    return df.assign(**masked)
+
+
 def exact_duplicate_columns(df: pd.DataFrame) -> list[tuple[str, str]]:
     """Column pairs that are byte-identical, not merely correlated."""
     cols = list(df.columns)
@@ -177,14 +189,15 @@ def exact_duplicate_columns(df: pd.DataFrame) -> list[tuple[str, str]]:
 
 
 def correlated_pairs(df: pd.DataFrame, threshold: float = 0.7) -> pd.DataFrame:
-    """Numeric column pairs at or above |r| >= threshold.
+    """Numeric column pairs at or above |r| >= threshold, sentinel cells excluded.
 
     Drops constant columns first: pandas' .corr() returns NaN for them, and
     silently dropping NaN correlations would hide a "no signal at all"
     column behind a "not correlated" report row.
     """
-    numeric = df.select_dtypes(include="number").drop(
-        columns=constant_columns(df), errors="ignore"
+    clean = drop_sentinels(df)
+    numeric = clean.select_dtypes(include="number").drop(
+        columns=constant_columns(clean), errors="ignore"
     )
     if numeric.shape[1] < 2:
         return pd.DataFrame(columns=["col_a", "col_b", "r"])
@@ -323,8 +336,9 @@ def plot_correlation_heatmap(
     df: pd.DataFrame, title: str, annotate: bool = True
 ) -> Figure:
     """Diverging correlation matrix, a matrix of r-values is a polarity job (-1..0..+1), not a magnitude one."""
-    numeric = df.select_dtypes(include="number").drop(
-        columns=constant_columns(df), errors="ignore"
+    clean = drop_sentinels(df)
+    numeric = clean.select_dtypes(include="number").drop(
+        columns=constant_columns(clean), errors="ignore"
     )
     corr = numeric.corr()
     cmap = LinearSegmentedColormap.from_list(
