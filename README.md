@@ -27,6 +27,10 @@ For residential operators evaluating AI tooling, the critical difference is **gr
 Moving to Miami is overwhelming — neighborhoods are hard to compare, listings are scattered, and AI tools often invent facts. Your job is to build a **grounded personalization engine** that helps newcomers find the right fit, with measurable quality at every layer of the stack.
 
 **Primary use case:** "I'm moving from NYC with a co-leaser. We want our own apartment — not a co-living facility — in Wynwood, Downtown, or Brickell."
+## System Architecture
+
+![System Architecture](img/architecture.png)
+
 
 ### Co-leaser vs. co-living — critical distinction
 
