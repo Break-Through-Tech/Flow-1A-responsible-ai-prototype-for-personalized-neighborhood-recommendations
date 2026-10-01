@@ -29,7 +29,7 @@ Moving to Miami is overwhelming — neighborhoods are hard to compare, listings 
 **Primary use case:** "I'm moving from NYC with a co-leaser. We want our own apartment — not a co-living facility — in Wynwood, Downtown, or Brickell."
 ## System Architecture
 
-![System Architecture](img/architecture.png)
+![System Architecture](img/architect.png)
 
 
 ### Co-leaser vs. co-living — critical distinction
