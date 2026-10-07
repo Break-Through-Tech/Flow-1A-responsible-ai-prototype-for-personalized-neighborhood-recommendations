@@ -113,9 +113,10 @@ def validate_profile(profile: dict, top_k: int = DEFAULT_TOP_K) -> dict:
 
 
 def filter_by_budget(df: pd.DataFrame, budget_max: float) -> pd.DataFrame:
-    """Keep ZIPs with median rent <= budget_max. Rent is not a similarity feature."""
-    return df.loc[df[BUDGET_COLUMN] <= budget_max].reset_index(drop=True)  # keep only affordable ZIPs
-
+    """Keep ZIPs with known median rent <= budget_max. Rent is not a similarity feature."""
+    known_rent = ~df["median_rent_usd_suppressed"]
+    affordable = df[BUDGET_COLUMN] <= budget_max
+    return df.loc[known_rent & affordable].reset_index(drop=True)
 
 def build_user_vector(vector_features: list[str], active_features: list[str]) -> np.ndarray:
     """1 on active preferences, 0 on the other fixed vector dimensions."""
