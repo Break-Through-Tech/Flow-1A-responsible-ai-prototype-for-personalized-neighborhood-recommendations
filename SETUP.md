@@ -117,7 +117,7 @@ Useful flags:
 ```bash
 python eval/run_eval.py --json eval/results/baseline_sep.json   # machine-readable, for the README scorecard
 python eval/run_eval.py --top-k 10                              # rank deeper; P@3 and P@5 still reported
-python eval/run_eval.py --profiles path/to/other_profiles.json  # for Task #9's expanded set
+python eval/run_eval.py --profiles path/to/other_profiles.json  # run against a different profile set
 ```
 
 Requires `scripts/recommender.py` from Task #6.
