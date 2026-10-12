@@ -99,3 +99,31 @@ Feature schema validation passed
 ```
 
 Before starting Task #6, read `FEATURE_SCHEMA.md` and use `scripts/feature_schema.py` rather than redefining the feature rules.
+
+## 8. Rec-engine eval harness (Task #8)
+
+Layer 1 of `EVAL_FRAMEWORK.md`. One command produces all three rec-engine metrics against the profiles in `eval/recommendation_profiles.json`:
+
+```bash
+python eval/run_eval.py
+```
+
+It reports Precision@3, Precision@5, mean cosine similarity, and budget filter pass rate, plus per-profile diagnostics explaining what limits each score.
+
+Budget filter pass rate is a correctness check rather than a score. The target is 100%, so the script **exits non-zero** if any returned ZIP is outside its profile's budget. That makes it usable as a CI gate. Rent is checked against `data/area_features_clean.csv` directly rather than the value the engine echoes back, and a disagreement between the two is reported separately.
+
+Useful flags:
+
+```bash
+python eval/run_eval.py --json eval/results/baseline_sep.json   # machine-readable, for the README scorecard
+python eval/run_eval.py --top-k 10                              # rank deeper; P@3 and P@5 still reported
+python eval/run_eval.py --profiles path/to/other_profiles.json  # for Task #9's expanded set
+```
+
+Requires `scripts/recommender.py` from Task #6.
+
+### Reading the precision numbers
+
+Two profiles list only 2 expected relevant ZIPs, so Precision@5 cannot exceed 0.40 for them. Across the current 5 profiles the ceilings are **P@3 = 0.867** and **P@5 = 0.520**, not 1.0. The harness prints the ceiling next to each score and the percentage achieved, so the baseline is not misread as a straight failure.
+
+The diagnostics block also flags profiles whose expected ZIPs are unreachable, tags the user expressed that the schema does not score, and profiles with a single active feature. That last one matters: with one active feature, cosine ranks by how *concentrated* a ZIP is on that feature rather than how *high* it scores.
