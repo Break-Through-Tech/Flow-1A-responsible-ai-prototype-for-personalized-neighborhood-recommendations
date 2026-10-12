@@ -1,0 +1,218 @@
+{
+  "summary": {
+    "profiles_total": 5,
+    "profiles_scored": 5,
+    "profiles_errored": 0,
+    "top_k": 5,
+    "precision": {
+      "3": 0.13333333333333333,
+      "5": 0.08
+    },
+    "precision_ceiling": {
+      "3": 0.8666666666666666,
+      "5": 0.52
+    },
+    "mean_cosine": 0.7822839048825022,
+    "budget_filter_pass_rate": 1.0,
+    "budget_profiles_passing": 5
+  },
+  "profiles": [
+    {
+      "profile_id": "P1_nyc_couple_own_apt",
+      "budget_max": 2500,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unscored_tags": [
+        "walkable"
+      ],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33150",
+        "33135",
+        "33054",
+        "33030",
+        "33010"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.7085799571037386,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 72,
+      "active_features": [
+        "transit"
+      ]
+    },
+    {
+      "profile_id": "P2_solo_own_apt_social",
+      "budget_max": 2000,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unscored_tags": [
+        "walkable"
+      ],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33186",
+        "33015",
+        "33012",
+        "33033",
+        "33157"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.7511608769546678,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [
+        "33185"
+      ],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 61,
+      "active_features": [
+        "social"
+      ]
+    },
+    {
+      "profile_id": "P3_solo_coliving_budget",
+      "budget_max": 1800,
+      "n_relevant": 2,
+      "n_reachable_relevant": 2,
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33130",
+        "33127",
+        "33128",
+        "33142",
+        "33125"
+      ],
+      "precision": {
+        "3": 0.6666666666666666,
+        "5": 0.4
+      },
+      "precision_ceiling": {
+        "3": 0.6666666666666666,
+        "5": 0.4
+      },
+      "mean_cosine": 0.7222810035339952,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [
+        "33156"
+      ],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 49,
+      "active_features": [
+        "transit",
+        "co_living_friendly"
+      ]
+    },
+    {
+      "profile_id": "P4_quiet_pets_budget",
+      "budget_max": 2200,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unscored_tags": [
+        "pet_friendly"
+      ],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33129",
+        "33154",
+        "33184",
+        "33140",
+        "33035"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.8217619237373602,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 65,
+      "active_features": [
+        "quiet"
+      ]
+    },
+    {
+      "profile_id": "P5_brickell_focus",
+      "budget_max": 3000,
+      "n_relevant": 2,
+      "n_reachable_relevant": 2,
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33012",
+        "33157",
+        "33033",
+        "33142",
+        "33015"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 0.6666666666666666,
+        "5": 0.4
+      },
+      "mean_cosine": 0.9076357630827496,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 75,
+      "active_features": [
+        "transit",
+        "social"
+      ]
+    }
+  ]
+}
