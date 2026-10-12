@@ -35,26 +35,66 @@ PROFILES_PATH = _ROOT / "eval" / "recommendation_profiles.json"
 AREA_PATH = _ROOT / "data" / "area_features_clean.csv"
 PUBLIC_PATH = _ROOT / "data" / "miami_dade_public_features.csv"
 PRECISION_KS = (3, 5)
+REQUIRED_KEYS = ("household", "housing_preference", "budget_max", "tags", "expected_relevant_zips")
+
+
+def _zip_list(pid: str, key: str, value) -> list[str]:
+    """ZIPs as de-duplicated strings, so a fixture written with bare numbers still matches."""
+    if not isinstance(value, list):
+        raise ValueError(f"{pid}: {key} must be a list of ZIP codes")
+    out = []
+    for z in value:
+        if isinstance(z, bool) or not isinstance(z, (str, int)):
+            raise ValueError(f"{pid}: {key} holds a non-ZIP value: {z!r}")
+        out.append(str(z).strip())
+    return list(dict.fromkeys(out))
 
 
 def load_profiles(path: Path) -> list[dict]:
-    profiles = json.loads(Path(path).read_text(encoding="utf-8"))
+    """Read and validate the fixture file, so a malformed profile fails here with a clear message.
+
+    Values the engine itself validates (household, housing_preference, budget
+    range) are left alone: a bad one shows up as an errored profile instead.
+    """
+    try:
+        profiles = json.loads(Path(path).read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON: {exc}") from exc
     if not isinstance(profiles, list) or not profiles:
         raise ValueError(f"{path} must hold a non-empty list of profiles")
     seen = set()
+    cleaned = []
     for p in profiles:
+        if not isinstance(p, dict):
+            raise ValueError(f"every profile must be an object, got: {p!r}")
         pid = p.get("profile_id")
-        if not pid:
+        if not pid or not isinstance(pid, str):
             raise ValueError(f"profile missing profile_id: {p}")
         if pid in seen:
             raise ValueError(f"duplicate profile_id: {pid}")
         seen.add(pid)
-    return profiles
+        missing = [k for k in REQUIRED_KEYS if k not in p]
+        if missing:
+            raise ValueError(f"{pid}: missing keys {missing}")
+        budget = p["budget_max"]
+        if isinstance(budget, bool) or not isinstance(budget, (int, float)):
+            raise ValueError(f"{pid}: budget_max must be a number, got {budget!r}")
+        if not isinstance(p["tags"], list) or not all(isinstance(t, str) for t in p["tags"]):
+            raise ValueError(f"{pid}: tags must be a list of strings")
+        p = dict(p)
+        p["expected_relevant_zips"] = _zip_list(pid, "expected_relevant_zips", p["expected_relevant_zips"])
+        p["not_relevant_zips"] = _zip_list(pid, "not_relevant_zips", p.get("not_relevant_zips", []))
+        cleaned.append(p)
+    return cleaned
 
 
 def load_reference(area_path: Path, public_path: Path) -> pd.DataFrame:
     """Rent, population and the suppression flag per ZIP, read independently of the recommender."""
-    area = pd.read_csv(area_path, dtype={ID_COLUMN: str}).set_index(ID_COLUMN)
+    area = pd.read_csv(area_path, dtype={ID_COLUMN: str})
+    absent = [c for c in (ID_COLUMN, BUDGET_COLUMN) if c not in area.columns]
+    if absent:
+        raise ValueError(f"{area_path} is missing columns {absent}")
+    area = area.set_index(ID_COLUMN)
     ref = pd.DataFrame(index=area.index)
     ref["rent"] = area[BUDGET_COLUMN]
     flag = f"{BUDGET_COLUMN}_suppressed"
@@ -108,6 +148,7 @@ def evaluate_profile(profile: dict, ref: pd.DataFrame, top_k: int, data_path: Pa
         "budget_max": budget,
         "n_relevant": len(relevant),
         "n_reachable_relevant": len(reachable_relevant(profile, ref)),
+        "unknown_relevant": [z for z in profile["expected_relevant_zips"] if z not in ref.index],
         "unscored_tags": unscored_tags(profile),
         "status": "ok",
         "error": None,
@@ -168,7 +209,7 @@ def evaluate_profile(profile: dict, ref: pd.DataFrame, top_k: int, data_path: Pa
     row["budget_pass"] = not row["budget_violations"]
     row["false_positives"] = [z for z in zips if z in not_relevant]
     row["unreachable_negatives"] = [
-        z for z in not_relevant if not is_reachable(z, budget, ref)
+        z for z in profile["not_relevant_zips"] if not is_reachable(z, budget, ref)
     ]
     return row
 
@@ -200,6 +241,10 @@ def summarize(rows: list[dict], top_k: int) -> dict:
     return summary
 
 
+def has_budget_violation(rows: list[dict]) -> bool:
+    return any(r["budget_violations"] for r in rows)
+
+
 def render(rows: list[dict], summary: dict, top_k: int) -> None:
     print(f"Layer 1 eval: {summary['profiles_total']} profiles, top_k={top_k}\n")
 
@@ -213,7 +258,7 @@ def render(rows: list[dict], summary: dict, top_k: int) -> None:
         print(
             f"{r['profile_id']:<26}"
             f"{r['precision'][3]:>7.3f}{r['precision'][5]:>7.3f}"
-            f"{r['mean_cosine']:>9.4f}"
+            f"{(format(r['mean_cosine'], '.4f') if r['mean_cosine'] is not None else '-'):>9}"
             f"{('pass' if r['budget_pass'] else 'FAIL'):>9}"
             f"{r['candidate_count']:>7}  {','.join(r['active_features'])}"
         )
@@ -229,18 +274,29 @@ def render(rows: list[dict], summary: dict, top_k: int) -> None:
     cosine = summary["mean_cosine"]
     print(f"  Mean cosine similarity  {f'{cosine:.4f}' if cosine is not None else 'n/a'}")
     rate = summary["budget_filter_pass_rate"]
-    verdict = "OK" if rate == 1.0 else "BUG"
+    verdict = "OK" if rate == 1.0 else "BUG" if has_budget_violation(rows) else "INCOMPLETE"
     print(f"  Budget filter pass rate {rate:.1%}   "
           f"({summary['budget_profiles_passing']}/{summary['profiles_total']} profiles)  [{verdict}]")
     if summary["profiles_errored"]:
-        print(f"  {summary['profiles_errored']} profile(s) errored and count as budget failures")
+        print(f"  {summary['profiles_errored']} profile(s) errored and count as not passing")
 
     print("\n--- diagnostics ---")
     any_note = False
     for r in rows:
         notes = []
         if r["status"] != "ok":
-            notes.append(f"errored: {r['error']}")
+            notes.append(f"errored: {r['status']}: {r['error']}")
+        if r["status"] == "ok" and not r["returned_zips"]:
+            notes.append(
+                "no ZIP is within budget, so nothing was recommended: precision is 0, "
+                "cosine is undefined, and the budget check passes with nothing to check"
+            )
+        elif r["status"] == "ok" and len(r["returned_zips"]) < top_k:
+            notes.append(
+                f"only {len(r['returned_zips'])} ZIPs are within budget, fewer than top_k={top_k}"
+            )
+        if r["unknown_relevant"]:
+            notes.append(f"expected ZIPs not in the data (typo?): {r['unknown_relevant']}")
         if r["budget_violations"]:
             notes.append(f"BUDGET VIOLATION: {r['budget_violations']}")
         if r["rent_echo_mismatches"]:
@@ -283,27 +339,39 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Layer 1 recommendation-engine eval")
     ap.add_argument("--profiles", type=Path, default=PROFILES_PATH)
     ap.add_argument("--data", type=Path, default=None, help="override the ZIP feature CSV")
-    ap.add_argument("--top-k", type=int, default=max(PRECISION_KS))
+    ap.add_argument("--top-k", type=int, default=max(PRECISION_KS),
+                    help="rank deeper; mean cosine averages over all top-k, so compare runs at the same value")
     ap.add_argument("--json", type=Path, default=None, help="also write the full result as JSON")
     args = ap.parse_args()
 
     if args.top_k < max(PRECISION_KS):
         ap.error(f"--top-k must be at least {max(PRECISION_KS)} to compute Precision@{max(PRECISION_KS)}")
 
-    profiles = load_profiles(args.profiles)
-    ref = load_reference(args.data or AREA_PATH, PUBLIC_PATH)
+    try:
+        profiles = load_profiles(args.profiles)
+        ref = load_reference(args.data or AREA_PATH, PUBLIC_PATH)
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
     rows = [evaluate_profile(p, ref, args.top_k, args.data) for p in profiles]
     summary = summarize(rows, args.top_k)
     render(rows, summary, args.top_k)
 
     if args.json:
-        args.json.parent.mkdir(parents=True, exist_ok=True)
         payload = {"summary": summary, "profiles": rows}
-        args.json.write_text(json.dumps(payload, indent=2, default=str) + "\n", encoding="utf-8")
+        try:
+            args.json.parent.mkdir(parents=True, exist_ok=True)
+            args.json.write_text(json.dumps(payload, indent=2, default=str) + "\n", encoding="utf-8")
+        except OSError as exc:
+            print(f"error: could not write {args.json}: {exc}", file=sys.stderr)
+            return 2
         print(f"\nwrote {args.json}")
 
-    if summary["budget_filter_pass_rate"] != 1.0:
+    if has_budget_violation(rows):
         print("\nFAILED: budget filter pass rate is below 100%, which is a bug rather than a metric.")
+        return 1
+    if summary["profiles_errored"]:
+        print(f"\nFAILED: {summary['profiles_errored']} profile(s) errored, so the run is incomplete.")
         return 1
     return 0
 

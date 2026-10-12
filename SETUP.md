@@ -120,6 +120,18 @@ python eval/run_eval.py --top-k 10                              # rank deeper; P
 python eval/run_eval.py --profiles path/to/other_profiles.json  # run against a different profile set
 ```
 
+Mean cosine similarity averages over every returned ZIP, so it changes with `--top-k`. Record and compare baselines at the default of 5.
+
+Exit codes: `0` when every profile ran and stayed within budget, `1` when a returned ZIP is over budget or a profile errored, `2` when the profile file or data file could not be read. A profile whose budget is below every ZIP's rent is not an error: it scores 0 and is called out in the diagnostics.
+
+In the profile file, `not_relevant_zips` is optional and ZIPs may be written as strings or bare numbers. A profile missing any other field is rejected with a message naming the profile and the field.
+
+The harness has its own checks:
+
+```bash
+python eval/test_run_eval.py
+```
+
 Requires `scripts/recommender.py` from Task #6.
 
 ### Reading the precision numbers
