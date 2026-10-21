@@ -5,7 +5,7 @@ same columns, in the same order, as the starter file, so `clean_data.py`,
 `eda.py` and the notebook keep working unchanged.
 
     python scripts/pull_census.py                  # 2024 ACS 5-year (2020-2024)
-    python scripts/pull_census.py --year 2022 --out data/raw/acs2022.csv
+    python scripts/pull_census.py --year 2022 --out /tmp/acs2022.csv
 
 Needs CENSUS_API_KEY in `.env` (free: https://api.census.gov/data/key_signup.html).
 
@@ -25,7 +25,6 @@ without it, `clean_data.py` will stop on that assertion after a new pull.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from datetime import date
@@ -66,21 +65,21 @@ COLUMN_ORDER = (
     + ZILLOW_COLUMNS
 )
 
-# ACS annotation values: negative codes that stand in for an estimate. Only
-# -666666666 is handled by clean_data.py, so any other one is reported loudly.
+# ACS annotation values that can stand in for an estimate, as described in the
+# Census "Notes on ACS Estimate and Annotation Values". The other codes
+# (-222222222, -333333333, -555555555) only appear on margins of error, which
+# this script does not request. Only -666666666 is handled by clean_data.py,
+# so any other one is reported loudly.
 ACS_SPECIAL_CODES = {
-    -999999999: "too few sample observations",
-    -888888888: "not applicable",
-    -666666666: "suppressed / could not be computed",
-    -555555555: "controlled estimate",
-    -333333333: "median falls in open-ended interval",
-    -222222222: "too few sample observations for a median",
+    -999999999: "too few sample cases in this geography",
+    -888888888: "not applicable or not available",
+    -666666666: "could not be computed: too few sample observations, or a median in an open-ended interval",
 }
 HANDLED_CODE = -666666666
 
 # Plausible-looking values the ACS uses for "this much or more". They pass any
 # range check, so they are listed rather than treated as measurements.
-TOP_CODES = {"B25077_001E": 2000001}
+TOP_CODES = {"B25064_001E": 3501, "B25077_001E": 2000001}
 
 ANCHOR_ZIPS = {"33127": "Wynwood", "33128": "Downtown", "33130": "Brickell"}
 
@@ -146,7 +145,12 @@ def build_public_features(raw: pd.DataFrame, previous: pd.DataFrame | None) -> p
     df = raw.rename(columns={ZCTA_GEO: "zip"}).copy()
     df["zip"] = df["zip"].astype(str).str.zfill(5)
     for col in ACS_VARIABLES:
-        df[col] = pd.to_numeric(df[col], errors="raise").astype("int64")
+        df[col] = pd.to_numeric(df[col], errors="raise")
+        # The API sends null when it has no data for a geography.
+        empty = df.loc[df[col].isna(), "zip"].tolist()
+        if empty:
+            raise SystemExit(f"Census API returned no value for {col} in ZIPs {empty}")
+        df[col] = df[col].astype("int64")
 
     # Same formula as the starter. Blank when the migration universe is 0 or
     # either input is an annotation code.
