@@ -88,6 +88,36 @@
     "tags": ["quiet"],
     "expected_relevant_zips": ["33158", "33149", "33146"],
     "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P10_co_leaser_coliving_social_budget",
+    "description": "Moving with a co-leaser, prefers co-living and social activity on a $1,600 budget. Expected ZIPs have high social scores, moderate co-living scores, and meet the budget.",
+    "budget_max": 1600,
+    "household": "with_co_leaser",
+    "housing_preference": "co_living",
+    "tags": ["co_living", "social"],
+    "expected_relevant_zips": ["33012", "33157", "33033"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P11_solo_own_apt_transit_quiet",
+    "description": "Solo mover seeking their own apartment with a $1,700 budget, prioritizing transit and quiet. Expected ZIPs have strong scores on both features and meet the budget.",
+    "budget_max": 1700,
+    "household": "alone",
+    "housing_preference": "own_apartment",
+    "tags": ["transit", "quiet"],
+    "expected_relevant_zips": ["33128", "33136", "33127"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P12_solo_own_apt_no_budget_match",
+    "description": "Solo mover seeking their own apartment with a $1,000 budget and transit preference. No ZIPs should qualify because the lowest eligible rent is $1,094.",
+    "budget_max": 1000,
+    "household": "alone",
+    "housing_preference": "own_apartment",
+    "tags": ["transit"],
+    "expected_relevant_zips": [],
+    "not_relevant_zips": []
   }
 ]
 
