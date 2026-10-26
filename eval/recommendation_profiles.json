@@ -58,6 +58,36 @@
     "tags": ["co_living", "transit"],
     "expected_relevant_zips": ["33127", "33128", "33130"],
     "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P7_solo_own_apt_low_budget_transit",
+    "description": "Solo mover looking for their own apartment, low budget, prioritizes transit",
+    "budget_max": 1400,
+    "household": "alone",
+    "housing_preference": "own_apartment",
+    "tags": ["transit"],
+    "expected_relevant_zips": ["33150", "33136", "33142"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P8_solo_coliving_quiet",
+    "description": "Solo mover preferring co-living and a quieter environment, with a $2,500 budget. Expected ZIPs have relatively strong quiet and co-living scores and meet the budget.",
+    "budget_max": 2500,
+    "household": "alone",
+    "housing_preference": "co_living",
+    "tags": ["co_living", "quiet"],
+    "expected_relevant_zips": ["33128", "33129", "33132"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P9_co_leaser_own_apt_quiet_high_budget",
+    "description": "Moving with a co-leaser, wants their own apartment and prioritizes quiet. Higher $3,600 budget allows ZIPs with strong quiet scores.",
+    "budget_max": 3600,
+    "household": "with_co_leaser",
+    "housing_preference": "own_apartment",
+    "tags": ["quiet"],
+    "expected_relevant_zips": ["33158", "33149", "33146"],
+    "not_relevant_zips": []
   }
 ]
 
