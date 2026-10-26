@@ -48,5 +48,16 @@
     "tags": ["transit", "social"],
     "expected_relevant_zips": ["33130", "33128"],
     "not_relevant_zips": ["33181"]
+  },
+  {
+    "profile_id": "P6_co_leaser_coliving_transit",
+    "description": "Moving with a co-leaser, prefers co-living and good transit access, moderate budget",
+    "budget_max": 1800,
+    "household": "with_co_leaser",
+    "housing_preference": "co_living",
+    "tags": ["co_living", "transit"],
+    "expected_relevant_zips": ["33127", "33128", "33130"],
+    "not_relevant_zips": []
   }
 ]
+
