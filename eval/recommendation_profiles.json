@@ -118,6 +118,46 @@
     "tags": ["transit"],
     "expected_relevant_zips": [],
     "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P13_co_leaser_own_apt_social_quiet",
+    "description": "Moving with a co-leaser, prefers their own apartment and values both social activity and quiet. Expected ZIPs balance strong social and quiet scores within a $2,200 budget.",
+    "budget_max": 2200,
+    "household": "with_co_leaser",
+    "housing_preference": "own_apartment",
+    "tags": ["social", "quiet"],
+    "expected_relevant_zips": ["33128", "33136", "33137"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P14_solo_coliving_transit_social",
+    "description": "Solo mover preferring co-living with a $2,000 budget, prioritizing transit and social activity. Expected ZIPs have strong scores across transit, social, and co-living features and meet the budget.",
+    "budget_max": 2000,
+    "household": "alone",
+    "housing_preference": "co_living",
+    "tags": ["co_living", "transit", "social"],
+    "expected_relevant_zips": ["33127", "33130", "33128"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P15_co_leaser_coliving_transit_quiet",
+    "description": "Moving with a co-leaser, prefers co-living with a $2,300 budget, prioritizing transit and quiet. Expected ZIPs balance transit, quiet, and co-living scores while meeting the budget.",
+    "budget_max": 2300,
+    "household": "with_co_leaser",
+    "housing_preference": "co_living",
+    "tags": ["co_living", "transit", "quiet"],
+    "expected_relevant_zips": ["33128", "33127", "33137"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P16_solo_own_apt_transit_social_high_budget",
+    "description": "Solo mover seeking their own apartment with a $3,000 budget, prioritizing transit and social activity. Expected ZIPs have the highest combined transit and social scores among budget-eligible neighborhoods.",
+    "budget_max": 3000,
+    "household": "alone",
+    "housing_preference": "own_apartment",
+    "tags": ["transit", "social"],
+    "expected_relevant_zips": ["33142", "33157", "33012"],
+    "not_relevant_zips": []
   }
 ]
 
