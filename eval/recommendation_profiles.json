@@ -158,6 +158,46 @@
     "tags": ["transit", "social"],
     "expected_relevant_zips": ["33142", "33157", "33012"],
     "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P17_solo_own_apt_exact_budget",
+    "description": "Solo mover seeking their own apartment with a $1,553 budget and transit preference. Tests whether ZIPs priced exactly at the budget limit remain eligible.",
+    "budget_max": 1553,
+    "household": "alone",
+    "housing_preference": "own_apartment",
+    "tags": ["transit"],
+    "expected_relevant_zips": ["33130"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P18_solo_own_apt_extreme_budget_quiet",
+    "description": "Solo mover seeking their own apartment with a $10,000 budget, prioritizing quiet. Expected ZIPs have the highest quiet scores among ZIPs with non-suppressed rent. Tests ranking when budget is not restrictive.",
+    "budget_max": 10000,
+    "household": "alone",
+    "housing_preference": "own_apartment",
+    "tags": ["quiet"],
+    "expected_relevant_zips": ["33122", "33158", "33031"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P19_solo_own_apt_unscored_preferences",
+    "description": "Solo mover seeking their own apartment with a $2,000 budget, prioritizing transit while also requesting walkable and pet-friendly preferences. Tests how the recommender handles recognized but unscored tags alongside a scored preference.",
+    "budget_max": 2000,
+    "household": "alone",
+    "housing_preference": "own_apartment",
+    "tags": ["walkable", "pet_friendly", "transit"],
+    "expected_relevant_zips": ["33150", "33136", "33142"],
+    "not_relevant_zips": []
+  },
+  {
+    "profile_id": "P20_co_leaser_own_apt_social_quiet_tight_budget",
+    "description": "Moving with a co-leaser, wants their own apartment with a tight $1,200 budget, prioritizing both social activity and quiet. Expected ZIPs balance both features while meeting the restrictive budget.",
+    "budget_max": 1200,
+    "household": "with_co_leaser",
+    "housing_preference": "own_apartment",
+    "tags": ["social", "quiet"],
+    "expected_relevant_zips": ["33128", "33136"],
+    "not_relevant_zips": []
   }
 ]
 
