@@ -51,7 +51,7 @@
   },
   {
     "profile_id": "P6_co_leaser_coliving_transit",
-    "description": "Moving with a co-leaser, prefers co-living and good transit access, moderate budget",
+    "description": "Moving with a co-leaser, prefers co-living and transit access on a $1,800 budget. Expected ZIPs have strong transit and co-living scores, non-suppressed rents, and meet the budget.",
     "budget_max": 1800,
     "household": "with_co_leaser",
     "housing_preference": "co_living",
@@ -61,7 +61,7 @@
   },
   {
     "profile_id": "P7_solo_own_apt_low_budget_transit",
-    "description": "Solo mover looking for their own apartment, low budget, prioritizes transit",
+    "description": "Solo mover seeking their own apartment with a $1,400 budget, prioritizing transit. Expected ZIPs have the highest transit scores among budget-eligible ZIPs with non-suppressed rents.",
     "budget_max": 1400,
     "household": "alone",
     "housing_preference": "own_apartment",
