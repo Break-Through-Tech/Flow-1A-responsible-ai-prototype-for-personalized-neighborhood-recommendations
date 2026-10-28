@@ -122,7 +122,9 @@ python eval/run_eval.py --profiles path/to/other_profiles.json  # run against a 
 
 Mean cosine similarity averages over every returned ZIP, so it changes with `--top-k`. Record and compare baselines at the default of 5.
 
-Exit codes: `0` when every profile ran and stayed within budget, `1` when a returned ZIP is over budget or a profile errored, `2` when the profile file or data file could not be read. A profile whose budget is below every ZIP's rent is not an error: it scores 0 and is called out in the diagnostics.
+Exit codes: `0` when every profile ran and stayed within budget, `1` when a returned ZIP is over budget, a profile errored, or a profile is stale (below), `2` when the profile file or data file could not be read. A profile whose budget is below every ZIP's rent is not an error as long as it expects no ZIPs: it scores 0 and is called out in the diagnostics.
+
+**Stale profiles.** If a profile expects a ZIP the engine can never return, the run fails and the profile is marked `[STALE PROFILE]`. That happens when the ZIP's rent is over the profile's budget, when its rent is suppressed, or when it is not in the data. This usually follows a data refresh that moves rents past a budget set by hand, for example a budget pinned to one ZIP's exact rent. The fix is to update the budget or the expected ZIPs, not the harness. When a budget is tied to a specific ZIP's rent, say so in the profile's `description` so the next person knows what to update.
 
 In the profile file, `not_relevant_zips` is optional and ZIPs may be written as strings or bare numbers. A profile missing any other field is rejected with a message naming the profile and the field.
 
@@ -138,4 +140,4 @@ Requires `scripts/recommender.py` from Task #6.
 
 Two profiles list only 2 expected relevant ZIPs, so Precision@5 cannot exceed 0.40 for them. Across the current 5 profiles the ceilings are **P@3 = 0.867** and **P@5 = 0.520**, not 1.0. The harness prints the ceiling next to each score and the percentage achieved, so the baseline is not misread as a straight failure.
 
-The diagnostics block also flags profiles whose expected ZIPs are unreachable, tags the user expressed that the schema does not score, and profiles with a single active feature. That last one matters: with one active feature, cosine ranks by how *concentrated* a ZIP is on that feature rather than how *high* it scores.
+The diagnostics block also lists each unreachable expected ZIP with the reason, tags the user expressed that the schema does not score, and profiles with a single active feature. That last one matters: with one active feature, cosine ranks by how *concentrated* a ZIP is on that feature rather than how *high* it scores.
