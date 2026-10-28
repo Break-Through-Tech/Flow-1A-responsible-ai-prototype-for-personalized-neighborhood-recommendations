@@ -169,7 +169,13 @@ Use these metrics from day one — not just at the end. They're your GPS, not yo
 
 | Name | GitHub | What they worked on |
 |------|--------|---------------------|
-| | | |
+| Azizbek Olimov | [@azizbekolimov](https://github.com/azizbekolimov) | Shared dev environment (Task #1), real review corpus (Task #13), LLM agent wiring (Task #19) |
+| Frank Quintero | [@FrankQuintero](https://github.com/FrankQuintero) | Starter CSV audit (Task #2), co-leaser vs co-living guardrail (Task #7), recommender tuning and ablation (Task #15) |
+| Prisha Agarwal | [@prisha-agarwal](https://github.com/prisha-agarwal) | Census suppression handling (Task #3), MCP server (Task #16), team table (Task #11) |
+| Ayo | [@avisink](https://github.com/avisink) | Anchor ZIP EDA (Task #4), rec-engine eval harness (Task #8), live Census ACS pulls (Task #11), NLP theme extraction (Task #14) |
+| Shruti Timalsina | [@shrutimalsina](https://github.com/shrutimalsina) | Feature vector schema (Task #5), eval profile set (Task #9), fair-housing proxy review (Task #20), synthetic-option labeling (Task #21) |
+| Nikesh Paudyal | [@Natroness](https://github.com/Natroness) | Baseline recommender v0 (Task #6), rent index (Task #12), ethics tool (Task #18) |
+| Mourede Otchere | [@Mourede](https://github.com/Mourede) | September baseline scores (Task #10), tool JSON contracts (Task #17) |
 
 ---
 
