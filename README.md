@@ -84,6 +84,33 @@ A three-layer system:
 
 See `MCP_SETUP.md` for the full contract.
 
+### Running the MCP server
+
+The tools are plain functions in `scripts/mcp_tools.py`, so you can call and test them without the server or an LLM. `scripts/mcp_server.py` registers them with the `mcp` SDK (v2, `MCPServer`).
+
+From the repo root, with the `.venv` active:
+
+```bash
+python -m scripts.mcp_server          # starts the server over stdio
+python scripts/test_mcp_tools.py      # tool + server checks (also runs under pytest)
+```
+
+You don't normally start the server by hand. An MCP client launches it. To connect a client such as Claude Desktop or the MCP Inspector, point it at the venv's Python:
+
+```json
+{
+  "mcpServers": {
+    "flow1a-neighborhoods": {
+      "command": "/absolute/path/to/repo/.venv/bin/python",
+      "args": ["-m", "scripts.mcp_server"],
+      "cwd": "/absolute/path/to/repo"
+    }
+  }
+}
+```
+
+Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. `ethics` currently returns the README non-negotiables as placeholder rules until Task #18 replaces them.
+
 ---
 
 ## Responsible AI — non-negotiables
