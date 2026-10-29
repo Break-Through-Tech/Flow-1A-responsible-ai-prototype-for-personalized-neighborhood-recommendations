@@ -95,6 +95,25 @@ def test_area_stats_one_zip_all_zips_and_bad_input():
     assert t.area_stats(33127)["status"] == "invalid_input"
 
 
+def test_area_stats_marks_top_coded_medians_as_floors():
+    rent = t.area_stats("33149")["areas"][0]
+    assert rent["stats"]["median_rent_usd"] == 3501  # the value is kept
+    notes = {n["column"]: n for n in rent["top_coded"]}
+    assert set(notes) == {"median_rent_usd", "B25064_001E"}
+    assert notes["median_rent_usd"]["floor"] == 3500
+    home = t.area_stats("33109")["areas"][0]
+    assert [n["column"] for n in home["top_coded"]] == ["B25077_001E"]
+    assert home["top_coded"][0]["floor"] == 2000000
+    assert t.area_stats("33127")["areas"][0]["top_coded"] == []
+
+
+def test_recommend_marks_a_top_coded_rent():
+    out = t.recommend(**{**PROFILE, "budget_max": 5000}, k=80)
+    by_zip = {r["zip"]: r for r in out["recommendations"]}
+    assert by_zip["33149"]["top_coded"]["floor"] == 3500
+    assert all(r["top_coded"] is None for z, r in by_zip.items() if z != "33149")
+
+
 def test_crowd_themes_returns_text_for_a_known_zip_and_filters_by_theme():
     out = t.crowd_themes("33130")
     assert out["count"] > 0 and all(s["text"] for s in out["snippets"])

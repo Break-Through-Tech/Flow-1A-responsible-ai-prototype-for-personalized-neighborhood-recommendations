@@ -35,6 +35,16 @@ CROWD_PATH = DATA_DIR / "crowd_text_snippets.csv"
 
 # clean_data.py adds one of these boolean flags next to each column it imputed.
 FLAG_SUFFIXES = ("_suppressed", "_missing")
+
+# ACS top-codes some medians: 3501 means "more than $3,500" and 2000001 means
+# "more than $2,000,000". These are floors, not the real median, so tools
+# return them with a top_coded note instead of as a plain number.
+# median_rent_usd is an alias of B25064_001E (see clean_data.DERIVED_ALIASES).
+TOP_CODES = {
+    "B25064_001E": (3501, 3500),
+    "median_rent_usd": (3501, 3500),
+    "B25077_001E": (2000001, 2000000),
+}
 _ZIP_PATTERN = re.compile(r"^\d{5}$")
 
 # Placeholder rules until Task #18 (issue #30) replaces them with the full
@@ -58,6 +68,7 @@ ETHICS_RULES = {
     "data_limitations": [
         "Snapshot data only, not live market feeds.",
         "Census suppression codes (-666666666) are handled in preprocessing; area_stats returns those values as null.",
+        "Some ACS medians are top-coded floors (rent 3501 means more than $3,500; home value 2000001 means more than $2,000,000); tools mark these under top_coded.",
         "Crowd text snippets are demo data until they are replaced with a real review corpus.",
         "English-only text bias may apply when using real review corpora.",
     ],
@@ -114,6 +125,21 @@ def _read_dictionary(path: Path = DICTIONARY_PATH) -> dict[str, dict]:
     return sections
 
 
+def _top_coded(column: str, value) -> dict | None:
+    """A top_coded note if value is the ACS top code for column, else None."""
+    if column not in TOP_CODES or value is None:
+        return None
+    code, floor = TOP_CODES[column]
+    if value != code:
+        return None
+    return {
+        "column": column,
+        "value": code,
+        "floor": floor,
+        "meaning": f"ACS top code: the real median is more than {floor:,}, exact value unknown.",
+    }
+
+
 def _flag_source(flag: str) -> str:
     """median_rent_usd_suppressed -> median_rent_usd."""
     for suffix in FLAG_SUFFIXES:
@@ -165,6 +191,7 @@ def area_stats(zip_code: str | None = None) -> dict:
 
     A value that was suppressed or missing in the source is returned as null and
     its column is listed under "unavailable", never as the imputed median.
+    A top-coded value (e.g. rent 3501) is kept and explained under "top_coded".
     """
     if zip_code is not None and str(zip_code).strip() == "":
         zip_code = None
@@ -190,12 +217,14 @@ def area_stats(zip_code: str | None = None) -> dict:
         stats = {}
         for column in value_columns:
             stats[column] = None if column in unavailable else _json_value(row[column])
+        top_coded = [note for column, value in stats.items() if (note := _top_coded(column, value))]
         areas.append(
             {
                 "zip": row[ID_COLUMN],
                 "area_name": _json_value(names.get(row[ID_COLUMN])),
                 "stats": stats,
                 "unavailable": sorted(unavailable),
+                "top_coded": top_coded,
             }
         )
     return {"status": "ok", "zip_code": zip_code, "count": len(areas), "areas": areas}
@@ -239,7 +268,10 @@ def recommend(
     tags: list[str],
     k: int = DEFAULT_TOP_K,
 ) -> dict:
-    """Ranked ZIP matches from the baseline recommender (scripts/recommender.py)."""
+    """Ranked ZIP matches from the baseline recommender (scripts/recommender.py).
+
+    Each recommendation gets a "top_coded" note (or null) for its median_rent_usd.
+    """
     profile = {
         "budget_max": budget_max,
         "household": household,
@@ -247,9 +279,12 @@ def recommend(
         "tags": tags,
     }
     try:
-        return _recommend(profile, top_k=k)
+        result = _recommend(profile, top_k=k)
     except ValueError as exc:
         return _invalid(str(exc))
+    for rec in result["recommendations"]:
+        rec["top_coded"] = _top_coded("median_rent_usd", rec["median_rent_usd"])
+    return result
 
 
 def ethics() -> dict:
