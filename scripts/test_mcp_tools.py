@@ -109,9 +109,13 @@ def test_area_stats_marks_top_coded_medians_as_floors():
 
 def test_recommend_marks_a_top_coded_rent():
     out = t.recommend(**{**PROFILE, "budget_max": 5000}, k=80)
-    by_zip = {r["zip"]: r for r in out["recommendations"]}
-    assert by_zip["33149"]["top_coded"]["floor"] == 3500
-    assert all(r["top_coded"] is None for z, r in by_zip.items() if z != "33149")
+    recs = out["recommendations"]
+    assert any(r["median_rent_usd"] == 3501 for r in recs)
+    for r in recs:
+        if r["median_rent_usd"] == 3501:
+            assert r["top_coded"]["floor"] == 3500
+        else:
+            assert r["top_coded"] is None
 
 
 def test_crowd_themes_returns_text_for_a_known_zip_and_filters_by_theme():
