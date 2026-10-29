@@ -129,12 +129,16 @@ Use these metrics from day one — not just at the end. They're your GPS, not yo
 
 | Layer | Metric | Baseline (Sep) | Final (Nov) | Pass? |
 |-------|--------|----------------|-------------|-------|
-| Rec engine | Precision@3 | | | |
-| Rec engine | Mean cosine similarity | | | |
-| MCP | Tool selection accuracy | | | |
-| LLM | Tool grounding rate | | | |
-| LLM | Refusal rate | | | |
-| NLP | Theme coverage | | | |
+| Rec engine | Precision@3 | 0.133 (ceiling 0.867) | | |
+| Rec engine | Precision@5 | 0.080 (ceiling 0.520) | | |
+| Rec engine | Mean cosine similarity | 0.782 | | |
+| Rec engine | Budget filter pass rate | 100% (5/5) | | |
+| MCP | Tool selection accuracy | Not built yet (October) | | |
+| LLM | Tool grounding rate | Not built yet (October) | | |
+| LLM | Refusal rate | Not built yet (October) | | |
+| NLP | Theme coverage | 12.0% (3/25) | | |
+
+Baseline recorded for Task #10 from the Task #6 recommender. See [Baseline results](#baseline-results-task-10) for how to reproduce it and what the numbers mean.
 
 ---
 
@@ -192,6 +196,38 @@ Use these metrics from day one — not just at the end. They're your GPS, not yo
 ---
 
 ## Results *(your team fills this in)*
+
+### Baseline results (Task #10)
+
+Baseline recommender from Task #6: hard budget filter (ZIPs with suppressed rent excluded), then cosine similarity over `transit`, `social`, `quiet` (+ `co_living_friendly` for co-living). Scored on the 5 profiles in `eval/recommendation_profiles.json`, top 5 per profile.
+
+Reproduce from the repo root:
+
+```bash
+python eval/run_eval.py --json eval/results/baseline_sep.json   # Precision@k, cosine, budget pass rate
+python eval/theme_coverage.py                                    # NLP theme coverage
+```
+
+| Profile | P@3 | P@5 | Mean cosine | Top 5 returned |
+|---------|-----|-----|-------------|----------------|
+| P1 couple, own apt, transit + walkable | 0.00 | 0.00 | 0.709 | Little Haiti, Little Havana, 33054, 33030, 33010 |
+| P2 solo, own apt, social + walkable | 0.00 | 0.00 | 0.751 | Kendall, 33015, 33012, 33033, Palmetto Bay |
+| P3 solo, co-living, transit | 0.67 | 0.40 | 0.722 | **Brickell**, Wynwood, **Downtown**, Allapattah, Riverside |
+| P4 couple, own apt, quiet + pets | 0.00 | 0.00 | 0.822 | Brickell Hammock, Bal Harbour, 33184, 33140, 33035 |
+| P5 couple, own apt, transit + social | 0.00 | 0.00 | 0.908 | 33012, Palmetto Bay, 33033, Allapattah, 33015 |
+
+Bold marks an expected relevant ZIP. Unnamed ZIPs have no `area_name` in the data yet.
+
+**What the baseline shows**
+
+- **The budget filter is correct.** Every returned ZIP is within budget in all 5 profiles.
+- **Ranking is weak.** Only P3 puts expected ZIPs in the top 3. Precision is 15% of what these profiles allow: some list only 2 relevant ZIPs, so P@3 tops out at 0.867 and P@5 at 0.520, not 1.0.
+- **Cosine ranks how concentrated a ZIP is on the chosen features, not how strong it is on them.** The anchors score high on transit, social *and* quiet, so a transit-only user is matched to ZIPs that are high on transit and low on everything else (Little Haiti beats Brickell). Unselected features still count toward a ZIP's vector length.
+- **Mean cosine looks high (0.78) but does not track quality.** It measures closeness to the user vector, not whether the right ZIPs were returned.
+- **`walkable` and `pet_friendly` are not scored** because their data is unusable (Task #4), so P1, P2 and P4 lose part of what the user asked for.
+- **Theme coverage is low (12%)** because the demo crowd-text corpus covers only 11 of 80 ZIPs. Themes are topic labels, not sentiment, so coverage shows whether there is text to explain a match, not whether the text agrees with it.
+
+**Priorities for October:** score only the selected features (or use a weighted sum) so strong all-round ZIPs are not penalized, rebuild `walkable` and `pet_friendly` from real data, and replace the demo crowd text with a real review corpus.
 
 ---
 
