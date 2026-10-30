@@ -89,27 +89,48 @@ def load_profiles(path: Path) -> list[dict]:
 
 
 def load_reference(area_path: Path, public_path: Path) -> pd.DataFrame:
-    """Read Zillow rents independently of the recommender."""
+    """Independently calculate the lower usable ACS/Zillow estimate."""
     area = pd.read_csv(area_path, dtype={ID_COLUMN: str})
     snapshot = pd.read_csv(
         _ROOT / "data" / "zillow_rent_snapshot.csv",
         dtype={"zip": str},
     )
 
-    joined = area[[ID_COLUMN]].merge(
+    joined = area.merge(
         snapshot[["zip", "zori_rent_usd"]],
         on="zip",
         how="left",
         validate="one_to_one",
     ).set_index(ID_COLUMN)
 
-    ref = pd.DataFrame(index=joined.index)
-    ref["rent"] = pd.to_numeric(joined["zori_rent_usd"], errors="raise")
-    ref["rent_unavailable"] = (
-        ref["rent"].isna()
-        | ~ref["rent"].map(math.isfinite)
-        | ref["rent"].le(0)
+    acs = pd.to_numeric(joined["median_rent_usd"], errors="raise")
+    zori = pd.to_numeric(joined["zori_rent_usd"], errors="raise")
+
+    acs_valid = (
+        acs.notna()
+        & acs.map(math.isfinite)
+        & acs.gt(0)
+        & acs.ne(3501)
     )
+    for flag in ("median_rent_usd_suppressed", "median_rent_usd_missing"):
+        if flag in joined:
+            acs_valid &= ~joined[flag].fillna(True).astype(bool)
+
+    zori_valid = (
+        zori.notna()
+        & zori.map(math.isfinite)
+        & zori.gt(0)
+    )
+
+    estimates = pd.DataFrame({
+        "acs": acs.where(acs_valid),
+        "zori": zori.where(zori_valid),
+    })
+
+    ref = pd.DataFrame(index=joined.index)
+    ref["rent"] = estimates.min(axis=1)
+    ref["rent_upper"] = estimates.max(axis=1)
+    ref["rent_unavailable"] = ref["rent"].isna()
 
     if public_path.exists():
         pop = pd.read_csv(

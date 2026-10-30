@@ -89,30 +89,45 @@ Demo snippets mimicking public review/forum text for NLP themes. Replace with re
 - Do not use outputs for leasing decisions or demographic steering.
 - English-only text bias may apply when using real review corpora.
 
+## Rent reference ranges — Task #12
 
-## Zillow rent index — Task #12
+Sources:
+- Census ACS 2020–2024 five-year median gross rent (B25064_001E).
+- Zillow Research ZIP-level smoothed ZORI, all homes plus multifamily,
+  September 2026 observation, downloaded October 29, 2026.
+  https://files.zillowstatic.com/research/public_csvs/zori/Zip_zori_uc_sfrcondomfr_sm_month.csv
 
-Source: Zillow Research, ZIP-level smoothed ZORI, all homes plus multifamily.
-https://files.zillowstatic.com/research/public_csvs/zori/Zip_zori_uc_sfrcondomfr_sm_month.csv
+Units: USD/month.
 
-Downloaded October 29, 2026. Observation month: September 2026.
-Units: USD per month.
+When both estimates are usable:
+- rent_lower_usd = min(ACS, ZORI)
+- rent_upper_usd = max(ACS, ZORI)
 
-`data/zillow_rent_snapshot.csv` contains the project ZIPs and their
-`zori_rent_usd`, availability, source, observation date, and units.
-The accompanying metadata JSON records the source URL and raw-file SHA-256.
+A ZIP qualifies when budget_max >= rent_lower_usd.
+Budgets above the upper estimate remain eligible.
+Results identify whether the budget is within the reference range
+or above the upper estimate. Rent does not affect cosine similarity.
 
-The budget filter uses ZORI, while ACS `median_rent_usd` remains unchanged.
-Rent is not included in cosine similarity. Comparisons use unrounded values.
+Suppressed, originally missing, imputed, nonpositive, nonfinite,
+and top-coded ACS rents are not used as exact estimates.
+Unavailable Zillow rents are not imputed.
+If only one source is usable, both numeric bounds equal that estimate
+and rent_basis identifies the single source.
+If neither source is usable, the ZIP is excluded.
 
-Coverage: 75 of 80 ZIPs. ZIPs 33101, 33109, 33158, 33031, and 33039 have
-no usable value and are excluded, with no imputation or ACS fallback.
+Zillow coverage is 75/80 project ZIPs. Missing Zillow values do not
+exclude a ZIP when a usable ACS estimate exists.
 
-ZORI is an area-level rent index, not an available listing, guaranteed price,
-co-living room price, or per-person rent. Household selection does not divide rent.
-ACS and ZORI are separate measures, not established lower and upper bounds.
+These are reference estimates from different measures and periods,
+not guaranteed market minimum/maximum rents or available listings.
+They are not co-living room prices or per-person rents.
+Household selection does not divide rent.
 
-Validation: recommender self-check passed; 18/18 evaluation tests passed.
-Existing evaluation budgets were retained. Budget pass rate is 100%;
-Precision@3 and Precision@5 are both 0 on those five profiles following
-the rent-source change. This does not establish recommendation quality.
+Recommendation results include both bounds, usable source values,
+source periods, rent_basis, budget_position, and a disclaimer.
+budget_rent_usd is the lower estimate used for eligibility.
+
+Validation: recommender self-check and 18 evaluation tests passed.
+On the existing five profiles: Precision@3 = 0.133,
+Precision@5 = 0.080, mean cosine = 0.7741,
+budget filter pass rate = 100%.
