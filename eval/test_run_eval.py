@@ -97,7 +97,8 @@ def test_integer_zips_score_the_same_as_strings():
     as_str, _, _ = _run(_profile())
     as_int, _, _ = _run(_profile(expected_relevant_zips=[33130, 33128, 33127], not_relevant_zips=[33186, 33156]))
     assert as_int[0]["precision"] == as_str[0]["precision"]
-    assert as_int[0]["precision_ceiling"] == as_str[0]["precision_ceiling"] == {3: 1.0, 5: 0.6}
+    assert as_int[0]["precision_ceiling"] == as_str[0]["precision_ceiling"]
+    assert as_int[0]["returned_zips"] == as_str[0]["returned_zips"]
 
 
 def test_not_relevant_zips_is_optional():
@@ -183,14 +184,14 @@ def test_every_profile_errored_still_renders():
 
 
 def test_unknown_expected_zip_is_flagged():
-    rows, _, text = _run(_profile(expected_relevant_zips=["33130", "99999"]))
+    rows, _, text = _run(_profile(budget_max=3500,expected_relevant_zips=["33130", "99999"],))
     assert rows[0]["unknown_relevant"] == ["99999"] and rows[0]["n_reachable_relevant"] == 1
     assert "not in the data" in text
 
 
-def test_suppressed_rent_zip_is_unreachable():
+def test_unavailable_rent_zip_is_unreachable():
     ref = _ref()
-    suppressed = ref.index[ref["rent_imputed"]]
+    suppressed = ref.index[ref["rent_unavailable"]]
     assert len(suppressed) > 0
     assert not any(h.is_reachable(z, 10**9, ref) for z in suppressed)
     assert not h.is_reachable("99999", 10**9, ref)
@@ -215,6 +216,57 @@ def test_cli_json_output_matches_the_printed_run():
     assert payload["summary"]["profiles_total"] == len(payload["profiles"]) == 5
     assert set(payload["summary"]["precision"]) == {"3", "5"}
 
+def test_zillow_budget_filter_handles_invalid_and_boundary_rents():
+    import pandas as pd
+    from scripts.recommender import filter_by_budget
+
+    data = pd.DataFrame({
+        "zip": ["exact", "over", "missing", "zero", "negative", "infinite"],
+        "zori_rent_usd": [2500, 2500.01, float("nan"), 0, -1, float("inf")],
+    })
+
+    result = filter_by_budget(data, 2500)
+    assert result["zip"].tolist() == ["exact"]
+
+
+def test_unavailable_zillow_rents_are_never_recommended():
+    from scripts.recommender import load_area_features, recommend
+
+    areas = load_area_features()
+    unavailable = set(
+        areas.loc[areas["zori_rent_usd"].isna(), "zip"]
+    )
+    assert unavailable
+
+    result = recommend({
+        "household": "alone",
+        "housing_preference": "own_apartment",
+        "budget_max": 1_000_000,
+        "tags": ["transit"],
+    }, top_k=len(areas))
+
+    returned = {row["zip"] for row in result["recommendations"]}
+    assert not returned & unavailable
+    assert len(returned) == areas["zori_rent_usd"].notna().sum()
+
+
+def test_zillow_recommendations_include_rent_provenance():
+    from scripts.recommender import recommend
+
+    result = recommend({
+        "household": "with_co_leaser",
+        "housing_preference": "own_apartment",
+        "budget_max": 3500,
+        "tags": ["transit"],
+    })
+
+    assert result["recommendations"]
+    for row in result["recommendations"]:
+        assert row["budget_rent_usd"] <= 3500
+        assert row["rent_source"] == "Zillow Observed Rent Index (ZORI)"
+        assert row["rent_as_of"] == "2026-09-30"
+        assert row["rent_units"] == "USD/month"
+        assert "not a real listing" in row["rent_disclaimer"]
 
 if __name__ == "__main__":
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]

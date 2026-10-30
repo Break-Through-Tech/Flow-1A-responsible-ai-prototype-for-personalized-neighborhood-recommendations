@@ -88,3 +88,31 @@ Demo snippets mimicking public review/forum text for NLP themes. Replace with re
 - Synthetic options are for UI demonstration; never present them as real listings.
 - Do not use outputs for leasing decisions or demographic steering.
 - English-only text bias may apply when using real review corpora.
+
+
+## Zillow rent index — Task #12
+
+Source: Zillow Research, ZIP-level smoothed ZORI, all homes plus multifamily.
+https://files.zillowstatic.com/research/public_csvs/zori/Zip_zori_uc_sfrcondomfr_sm_month.csv
+
+Downloaded October 29, 2026. Observation month: September 2026.
+Units: USD per month.
+
+`data/zillow_rent_snapshot.csv` contains the project ZIPs and their
+`zori_rent_usd`, availability, source, observation date, and units.
+The accompanying metadata JSON records the source URL and raw-file SHA-256.
+
+The budget filter uses ZORI, while ACS `median_rent_usd` remains unchanged.
+Rent is not included in cosine similarity. Comparisons use unrounded values.
+
+Coverage: 75 of 80 ZIPs. ZIPs 33101, 33109, 33158, 33031, and 33039 have
+no usable value and are excluded, with no imputation or ACS fallback.
+
+ZORI is an area-level rent index, not an available listing, guaranteed price,
+co-living room price, or per-person rent. Household selection does not divide rent.
+ACS and ZORI are separate measures, not established lower and upper bounds.
+
+Validation: recommender self-check passed; 18/18 evaluation tests passed.
+Existing evaluation budgets were retained. Budget pass rate is 100%;
+Precision@3 and Precision@5 are both 0 on those five profiles following
+the rent-source change. This does not establish recommendation quality.

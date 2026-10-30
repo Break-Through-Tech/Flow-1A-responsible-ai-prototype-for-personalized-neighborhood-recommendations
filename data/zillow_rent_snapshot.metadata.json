@@ -1,0 +1,13 @@
+{
+  "source_url": "https://files.zillowstatic.com/research/public_csvs/zori/Zip_zori_uc_sfrcondomfr_sm_month.csv",
+  "source_file": "data/raw/Zip_zori_uc_sfrcondomfr_sm_month.csv",
+  "source_sha256": "dbfa71e2fa1e96daf0310bb035d75cfa7968ab489c75ea593eb374eb08e96337",
+  "retrieved_on": "2026-10-29",
+  "observation_date": "2026-09-30",
+  "series": "ZIP ZORI, all homes plus multifamily, smoothed",
+  "units": "USD/month",
+  "available_zips": 75,
+  "total_zips": 80,
+  "missing_policy": "Leave unavailable rents blank; no imputation or ACS fallback.",
+  "disclaimer": "Area-level rent index; not a real listing or guaranteed available rent."
+}

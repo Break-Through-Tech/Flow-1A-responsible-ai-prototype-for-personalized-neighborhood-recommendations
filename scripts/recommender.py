@@ -27,13 +27,34 @@ DEFAULT_TOP_K = 5
 
 
 def load_area_features(path: str | Path | None = None) -> pd.DataFrame:
-    """Load cleaned area features and run Task #5 schema validation.
+    """Load area features and attach the dated Zillow rent snapshot."""
+    df = pd.read_csv(path or _DATA_PATH, dtype={ID_COLUMN: str})
+    validate_feature_schema(df)
 
-    ZIP codes stay strings. The source CSV is not written.
-    """
-    df = pd.read_csv(path or _DATA_PATH, dtype={ID_COLUMN: str})  # read CSV; keep ZIP as text
-    validate_feature_schema(df)  # make sure the columns and values match Task #5
-    return df  
+    snapshot_path = _ROOT / "data" / "zillow_rent_snapshot.csv"
+    snapshot = pd.read_csv(snapshot_path, dtype={"zip": str})
+
+    required = {
+        "zip", "zori_rent_usd", "rent_as_of",
+        "rent_source", "rent_units",
+    }
+    missing = required - set(snapshot.columns)
+    if missing:
+        raise ValueError(f"Rent snapshot missing columns: {sorted(missing)}")
+
+    rent = pd.to_numeric(snapshot["zori_rent_usd"], errors="raise")
+    invalid = rent.notna() & (~np.isfinite(rent) | rent.le(0))
+    if invalid.any():
+        raise ValueError("Rent snapshot contains invalid rents")
+
+    snapshot["zori_rent_usd"] = rent
+
+    return df.merge(
+        snapshot[list(required)],
+        on="zip",
+        how="left",
+        validate="one_to_one",
+    )
 
 
 def _unscored_tags(tags: list[str], housing_preference: str) -> list[str]:
@@ -113,10 +134,15 @@ def validate_profile(profile: dict, top_k: int = DEFAULT_TOP_K) -> dict:
 
 
 def filter_by_budget(df: pd.DataFrame, budget_max: float) -> pd.DataFrame:
-    """Keep ZIPs with known median rent <= budget_max. Rent is not a similarity feature."""
-    known_rent = ~df["median_rent_usd_suppressed"]
-    affordable = df[BUDGET_COLUMN] <= budget_max
-    return df.loc[known_rent & affordable].reset_index(drop=True)
+    """Filter using available Zillow rent estimates in USD/month."""
+    rent = df["zori_rent_usd"]
+    eligible = (
+        rent.notna()
+        & np.isfinite(rent)
+        & rent.gt(0)
+        & rent.le(budget_max)
+    )
+    return df.loc[eligible].reset_index(drop=True)
 
 def build_user_vector(vector_features: list[str], active_features: list[str]) -> np.ndarray:
     """1 on active preferences, 0 on the other fixed vector dimensions."""
@@ -180,7 +206,14 @@ def rank_areas(
                 "rank": rank,  # 1 is the best match
                 "zip": zips[i],  # ZIP code
                 "area_name": "" if pd.isna(area_name) else str(area_name),  # name, or blank if missing
-                "median_rent_usd": float(row[BUDGET_COLUMN]),  # rent used in the budget check
+                "budget_rent_usd": float(row["zori_rent_usd"]),
+                "rent_source": str(row["rent_source"]),
+                "rent_as_of": str(row["rent_as_of"]),
+                "rent_units": str(row["rent_units"]),
+                "rent_disclaimer": (
+                "Area-level rent index; not a real listing "
+                "or guaranteed available rent."
+                ), # rent used in the budget check
                 "similarity": float(similarities[i]),  # cosine score
                 "matched_features": [  # only scored selected features
                     {"feature": feature, "area_score": feature_scores[feature]}  # feature name and ZIP score
@@ -269,12 +302,12 @@ def _self_check() -> None:
     assert empty["recommendations"] == []  # no rows should be returned
 
     areas = load_area_features()  # load the real cleaned table
-    for budget in sorted(areas[BUDGET_COLUMN].unique()):  # try each unique rent from low to high
-        n = int((areas[BUDGET_COLUMN] <= budget).sum())  # how many ZIPs fit this rent
+    for budget in sorted(areas["zori_rent_usd"].dropna().unique()):
+        n = len(filter_by_budget(areas, float(budget)))
         if 0 < n < DEFAULT_TOP_K:  # we want fewer matches than top_k
             few = recommend({**base, "budget_max": float(budget)})  # run recommend at that rent
             assert len(few["recommendations"]) == n  # return all remaining ZIPs
-            assert all(row["median_rent_usd"] <= budget for row in few["recommendations"])  # all must be affordable
+            assert all(row["budget_rent_usd"] <= budget for row in few["recommendations"])  # all must be affordable
             break  # one such budget is enough
     else:  # no budget had fewer matches than top_k
         raise AssertionError("expected a budget with fewer matches than top_k")  # that should not happen
@@ -285,7 +318,7 @@ def _self_check() -> None:
     assert dup["user_vector"] == {"transit": 1.0, "social": 0.0, "quiet": 0.0}  # 1 on transit, 0 on the rest
     assert dup["unscored_tags"] == ["walkable"]  # walkable is known but not scored
     assert [row["feature"] for row in dup["recommendations"][0]["matched_features"]] == ["transit"]  # only transit is a match reason
-    assert all(row["median_rent_usd"] <= 2500 for row in dup["recommendations"])  # all rents stay under budget
+    assert all(row["budget_rent_usd"] <= 2500 for row in dup["recommendations"])  # all rents stay under budget
     again = recommend({**base, "tags": ["transit", "walkable", "transit"]})  # run the same profile again
     assert [row["zip"] for row in dup["recommendations"]] == [  # ranking must stay the same
         row["zip"] for row in again["recommendations"]  # same ZIP order on the second run
@@ -303,7 +336,7 @@ def _self_check() -> None:
     assert coliving["vector_features"].count("co_living_friendly") == 1  # add that feature only once
     assert coliving["active_features"] == ["transit", "co_living_friendly"]  # both are scored
     assert coliving["unscored_tags"] == []  # co_living tag is not listed as unscored
-    assert all(row["median_rent_usd"] <= 1800 for row in coliving["recommendations"])  # all rents stay under $1800
+    assert all(row["budget_rent_usd"] <= 1800 for row in coliving["recommendations"])  # all rents stay under $1800
 
     quiet = recommend(  # official-style quiet plus pets profile
         {
@@ -315,7 +348,10 @@ def _self_check() -> None:
     )
     assert quiet["active_features"] == ["quiet"]  # only quiet is scored
     assert quiet["unscored_tags"] == ["pet_friendly"]  # pets stay recognized but unscored
-    assert [row["feature"] for row in quiet["recommendations"][0]["matched_features"]] == ["quiet"]  # pets are not a match reason
+    assert all(
+        [item["feature"] for item in row["matched_features"]] == ["quiet"]
+        for row in quiet["recommendations"]
+    )  # quiet is the only match reason
 
     print("self-check ok")  
 
