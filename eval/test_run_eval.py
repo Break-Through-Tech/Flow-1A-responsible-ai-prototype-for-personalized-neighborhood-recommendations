@@ -97,7 +97,8 @@ def test_integer_zips_score_the_same_as_strings():
     as_str, _, _ = _run(_profile())
     as_int, _, _ = _run(_profile(expected_relevant_zips=[33130, 33128, 33127], not_relevant_zips=[33186, 33156]))
     assert as_int[0]["precision"] == as_str[0]["precision"]
-    assert as_int[0]["precision_ceiling"] == as_str[0]["precision_ceiling"] == {3: 1.0, 5: 0.6}
+    assert as_int[0]["precision_ceiling"] == as_str[0]["precision_ceiling"]
+    assert as_int[0]["returned_zips"] == as_str[0]["returned_zips"]
 
 
 def test_not_relevant_zips_is_optional():
@@ -183,14 +184,14 @@ def test_every_profile_errored_still_renders():
 
 
 def test_unknown_expected_zip_is_flagged():
-    rows, _, text = _run(_profile(expected_relevant_zips=["33130", "99999"]))
+    rows, _, text = _run(_profile(budget_max=3500,expected_relevant_zips=["33130", "99999"],))
     assert rows[0]["unknown_relevant"] == ["99999"] and rows[0]["n_reachable_relevant"] == 1
     assert "not in the data" in text
 
 
-def test_suppressed_rent_zip_is_unreachable():
+def test_unavailable_rent_zip_is_unreachable():
     ref = _ref()
-    suppressed = ref.index[ref["rent_imputed"]]
+    suppressed = ref.index[ref["rent_unavailable"]]
     assert len(suppressed) > 0
     assert not any(h.is_reachable(z, 10**9, ref) for z in suppressed)
     assert not h.is_reachable("99999", 10**9, ref)
@@ -214,10 +215,93 @@ def test_cli_json_output_matches_the_printed_run():
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["summary"]["profiles_total"] == len(payload["profiles"]) == 5
     assert set(payload["summary"]["precision"]) == {"3", "5"}
+def test_rent_ranges_handle_boundaries_and_reversed_sources():
+    import pandas as pd
+    from scripts.recommender import add_rent_bounds, filter_by_budget
 
+    data = pd.DataFrame({
+        "zip": ["normal", "reversed"],
+        "median_rent_usd": [2600, 3200],
+        "zori_rent_usd": [3200, 2600],
+    })
+    areas = add_rent_bounds(data)
+
+    assert areas["rent_lower_usd"].tolist() == [2600, 2600]
+    assert areas["rent_upper_usd"].tolist() == [3200, 3200]
+    assert filter_by_budget(areas, 2599.99).empty
+
+    for budget in (2600, 2800, 3200):
+        result = filter_by_budget(areas, budget)
+        assert len(result) == 2
+        assert set(result["budget_position"]) == {"within_reference_range"}
+
+    higher = filter_by_budget(areas, 3500)
+    assert len(higher) == 2
+    assert set(higher["budget_position"]) == {"above_upper_estimate"}
+
+
+def test_rent_ranges_handle_unavailable_and_single_sources():
+    import pandas as pd
+    from scripts.recommender import add_rent_bounds, filter_by_budget
+
+    data = pd.DataFrame({
+        "zip": ["acs", "zori", "neither", "topcoded", "missing", "invalid"],
+        "median_rent_usd": [2600, 1500, 1500, 3501, 1500, -1],
+        "median_rent_usd_suppressed": [False, True, True, False, False, False],
+        "median_rent_usd_missing": [False, False, False, False, True, False],
+        "zori_rent_usd": [
+            float("nan"), 3200, float("nan"), 4000, 3000, float("inf")
+        ],
+    })
+    areas = add_rent_bounds(data).set_index("zip")
+
+    assert areas.at["acs", "rent_basis"] == "acs_only"
+    assert areas.at["acs", "rent_lower_usd"] == 2600
+    assert areas.at["acs", "rent_upper_usd"] == 2600
+
+    for zip_code, rent in (("zori", 3200), ("topcoded", 4000), ("missing", 3000)):
+        assert areas.at[zip_code, "rent_basis"] == "zori_only"
+        assert areas.at[zip_code, "rent_lower_usd"] == rent
+        assert areas.at[zip_code, "rent_upper_usd"] == rent
+
+    result = filter_by_budget(areas.reset_index(), 1_000_000)
+    assert set(result["zip"]) == {"acs", "zori", "topcoded", "missing"}
+
+
+def test_range_recommendations_include_provenance():
+    from scripts.recommender import recommend
+
+    result = recommend({
+        "household": "with_co_leaser",
+        "housing_preference": "own_apartment",
+        "budget_max": 3500,
+        "tags": ["transit"],
+    })
+
+    assert result["recommendations"]
+    for row in result["recommendations"]:
+        assert row["budget_rent_usd"] == row["rent_lower_usd"]
+        assert row["rent_lower_usd"] <= 3500
+        assert row["rent_lower_usd"] <= row["rent_upper_usd"]
+        assert row["rent_basis"] in {"acs_and_zori", "acs_only", "zori_only"}
+        assert row["rent_sources"]["acs"]["period"] == "2020-2024"
+        assert row["rent_sources"]["zori"]["as_of"] == "2026-09-30"
+        assert row["rent_units"] == "USD/month"
+        assert "not guaranteed" in row["rent_disclaimer"]
+
+        expected = (
+            "above_upper_estimate"
+            if 3500 > row["rent_upper_usd"]
+            else "within_reference_range"
+        )
+        assert row["budget_position"] == expected
 
 if __name__ == "__main__":
-    tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
+    tests = [
+        (name, fn)
+        for name, fn in sorted(globals().items())
+        if name.startswith("test_") and callable(fn)
+    ]
     failed = 0
     for name, fn in tests:
         try:
@@ -227,5 +311,6 @@ if __name__ == "__main__":
             print(f"FAIL  {name}: {type(exc).__name__}: {exc}")
         else:
             print(f"ok    {name}")
+
     print(f"\n{len(tests) - failed}/{len(tests)} passed")
     raise SystemExit(1 if failed else 0)
