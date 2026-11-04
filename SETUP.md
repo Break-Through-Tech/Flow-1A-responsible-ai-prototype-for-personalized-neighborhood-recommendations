@@ -71,6 +71,18 @@ The starter data in `data/` has been audited, cleaned of Census suppression sent
 
 The closing "Takeaways for Task #5 and Task #6" cell of the notebook summarizes what Task #4 found: `walkable` is a sentinel artifact rather than a real feature and must be recomputed or dropped, `pet_friendly` is constant, several feature pairs are redundant, tenure mix carries demographic-proxy risk, and the NLP corpus is thin. Read it before starting Task #5 (feature schema). Several of these need a decision before that work begins.
 
+### Refreshing the Census data (Task #11)
+
+`scripts/pull_census.py` rebuilds `data/miami_dade_public_features.csv` from the Census API, with the same columns in the same order. It needs `CENSUS_API_KEY` in `.env`. Census emails an activation link after signup, and the key is rejected until you click it.
+
+```bash
+python scripts/pull_census.py --sync-area-rent   # 2020-2024 ACS 5-year, the default
+python scripts/clean_data.py                     # re-flag suppression in the new pull
+python eval/run_eval.py                          # see how the rec-engine baseline moved
+```
+
+`--sync-area-rent` copies the new `median_rent_usd` into `data/area_features.csv`. Without it, `clean_data.py` stops, because it checks that the two files agree on rent. `--year 2022 --out <path>` reproduces the starter file, which is how its vintage was confirmed. The script prints any ACS annotation codes in the pull and flags the ones `clean_data.py` does not handle.
+
 ## 7. Feature vector schema (Task #5)
 
 Task #5 defines which columns are used for similarity, how the selected features are scaled, and how user preferences map to dataset columns.
