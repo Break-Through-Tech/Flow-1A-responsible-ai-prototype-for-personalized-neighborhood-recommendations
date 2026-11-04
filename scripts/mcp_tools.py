@@ -24,6 +24,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from scripts.feature_schema import ID_COLUMN
+from scripts.pull_census import TOP_CODES as _CENSUS_TOP_CODES
 from scripts.recommender import DEFAULT_TOP_K
 from scripts.recommender import recommend as _recommend
 
@@ -39,12 +40,11 @@ FLAG_SUFFIXES = ("_suppressed", "_missing")
 # ACS top-codes some medians: 3501 means "more than $3,500" and 2000001 means
 # "more than $2,000,000". These are floors, not the real median, so tools
 # return them with a top_coded note instead of as a plain number.
-# median_rent_usd is an alias of B25064_001E (see clean_data.DERIVED_ALIASES).
-TOP_CODES = {
-    "B25064_001E": (3501, 3500),
-    "median_rent_usd": (3501, 3500),
-    "B25077_001E": (2000001, 2000000),
-}
+# The codes come from pull_census.TOP_CODES ({column: code}); the floor is
+# code - 1. median_rent_usd is an alias of B25064_001E (see
+# clean_data.DERIVED_ALIASES), so it shares that column's code.
+TOP_CODES = {column: (code, code - 1) for column, code in _CENSUS_TOP_CODES.items()}
+TOP_CODES["median_rent_usd"] = TOP_CODES["B25064_001E"]
 _ZIP_PATTERN = re.compile(r"^\d{5}$")
 
 # Placeholder rules until Task #18 (issue #30) replaces them with the full
