@@ -111,6 +111,26 @@ You don't normally start the server by hand. An MCP client launches it. To conne
 
 Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. Top-coded ACS medians (rent `3501` = more than $3,500, home value `2000001` = more than $2,000,000) are kept but listed under `top_coded` with their floor, in both `area_stats` and `recommend`. `ethics` currently returns the README non-negotiables as placeholder rules until Task #18 replaces them.
 
+### Tool JSON contracts
+
+`scripts/tool_contracts.py` holds a JSON Schema for every tool's input and output. The server publishes them as each tool's `inputSchema` and `outputSchema` and checks every call against them:
+
+```bash
+python scripts/tool_contracts.py          # print every schema
+python scripts/test_tool_contracts.py     # well-formed, malformed, empty and no-match calls
+```
+
+| Case | What the tool returns |
+|------|-----------------------|
+| Arguments break the input schema (missing field, wrong type, unknown tag or theme, bad ZIP, `budget_max <= 0`, `k` outside 1–10) | `{"status": "invalid_input", "error": "...", "errors": [{"field", "message"}]}`, never a free-text SDK error |
+| Arguments are well-formed but unusable (only unscored tags such as `walkable`) | `invalid_input` from the tool itself |
+| Nothing matches | `not_found` (`area_stats`), `no_snippets` (`crowd_themes`) or `no_areas_within_budget` (`recommend`), with an empty list |
+| The tool's result breaks its output schema | `{"status": "contract_violation", ...}` in place of the result, so the agent never sees unchecked data |
+
+Arguments a tool doesn't declare are dropped by the MCP SDK before the contract sees them, so they are ignored rather than rejected.
+
+Every `recommend` match carries `ranking_reasons`, built only from the recommender's own numbers: `within_budget` (rent, budget, headroom), `selected_feature` (the ZIP's score on each feature the user picked) and `unselected_feature` (scores on the other features, which lower cosine similarity). It also has a one-line `summary`, and the result has a `rank_basis` that states how the ranking works. When a rent is the ACS top code (`3501`), `within_budget` has `rent_is_top_coded: true` and the summary says the rent is more than $3,500 and may exceed the budget, rather than quoting $3,501. The agent can explain a match without inventing anything.
+
 ---
 
 ## Responsible AI — non-negotiables
