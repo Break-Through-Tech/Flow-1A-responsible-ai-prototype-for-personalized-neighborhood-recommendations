@@ -153,3 +153,36 @@ Requires `scripts/recommender.py` from Task #6.
 Two profiles list only 2 expected relevant ZIPs, so Precision@5 cannot exceed 0.40 for them. Across the current 5 profiles the ceilings are **P@3 = 0.867** and **P@5 = 0.520**, not 1.0. The harness prints the ceiling next to each score and the percentage achieved, so the baseline is not misread as a straight failure.
 
 The diagnostics block also lists each unreachable expected ZIP with the reason, tags the user expressed that the schema does not score, and profiles with a single active feature. That last one matters: with one active feature, cosine ranks by how *concentrated* a ZIP is on that feature rather than how *high* it scores.
+
+## 9. NLP theme extraction and theme coverage (Task #14)
+
+`scripts/theme_extraction.py` reads the review text in `data/crowd_text_snippets.csv` and finds which of the five lifestyle themes (`transit`, `social`, `quiet`, `walkable`, `pet_friendly`) each review talks about. It does not trust the hand-written `theme` column, since one review often covers several themes and some argue against their label. Each match becomes a structured snippet:
+
+| Column | Meaning |
+|--------|---------|
+| `theme` | One of the five themes |
+| `stance` | `supports` if the review speaks for the theme, `contradicts` if against ("street noise is real" contradicts `quiet`) |
+| `evidence` | The exact phrase that matched, so any claim can be traced back to the text |
+| `labeled_theme` | The hand label, kept for comparison |
+
+The extractor is a keyword list in the same file, not a model, so every match can be explained. A negation up to three words before a cue flips its stance ("not walkable" contradicts, "not noisy" supports). If a review says both, `contradicts` wins, so the theme is never overstated. Nothing is generated or paraphrased.
+
+```bash
+python scripts/theme_extraction.py                    # counts per theme, reviews with no theme, labels the text never mentions
+python scripts/theme_extraction.py --out themes.csv   # also write the structured snippets
+```
+
+`themes_for_zip()` returns one ZIP's themes in a shape ready for the `crowd_themes` tool (Task #17).
+
+**Theme coverage** is the NLP row of the scorecard. For every profile in `eval/recommendation_profiles.json`, it takes the ZIPs the engine recommends and checks whether each one has a review about at least one of the profile's tags:
+
+```bash
+python eval/theme_coverage.py
+python eval/theme_coverage.py --json eval/results/theme_coverage.json
+```
+
+It uses the same recommendations as `eval/run_eval.py` and accepts the same `--profiles`, `--data` and `--top-k` flags, plus `--snippets`. Profiles with no extractable tag (e.g. only `co_living`) are skipped rather than scored as 0. Coverage counts a review whether it agrees or not; the `supported` rate counts only reviews that speak for the tag. The output also says how many recommended ZIPs have any reviews at all. When that number is small, coverage is limited by the corpus, not the extractor.
+
+Checks: `python eval/test_theme_coverage.py`. The tests use made-up sentences, so they keep passing when the corpus changes.
+
+Known limits: the keyword list was tuned on a small corpus and will miss phrasing it has not seen. "Busy area, but I can't hear any noise" reads as `contradicts`, because the contradicting cue wins. Words like Uber or scooters are not counted as transit, which here means public transit.
