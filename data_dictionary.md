@@ -71,14 +71,16 @@ Plain-text list of Miami-Dade ZIP codes used to scope the project.
 
 ## crowd_text_snippets.csv
 
-Demo snippets mimicking public review/forum text for NLP themes. Replace with real filtered corpora during model development.
+**Real review text (Task #13)** for the three anchor ZIPs (33127, 33128, 33130): 86 word-for-word excerpts of Google Maps reviews from [Google Local Data (2021)](https://mcauleylab.ucsd.edu/public_datasets/gdrive/googlelocal/), UCSD McAuley Lab. Only sentences about the area (transit, walking, noise, nightlife, pets) were kept. Reviewer names and IDs were removed, and sentences that describe an area as unsafe or by who lives there were left out. Reviews date from 2013 to 2021. Downtown (33128) has few `social` and `pet_friendly` snippets.
+
+Dataset citation: Li, Shang, McAuley, *UCTopic*, ACL 2022; Yan, He, Li, Zhang, McAuley, *Personalized Showcases*, SIGIR 2023.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | snippet_id | string | Row ID |
 | zip | string | Associated ZIP |
-| source | string | e.g. kaggle_reviews (document real source when replaced) |
-| theme | string | transit, social, quiet, co_living, etc. |
+| source | string | `google_local_2021` (Google Local Data 2021, see above) |
+| theme | string | One of `transit`, `walkable`, `social`, `quiet`, `pet_friendly` |
 | text | string | Snippet text (aggregate use only) |
 
 ## Limitations
