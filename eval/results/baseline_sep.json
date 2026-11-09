@@ -1,4 +1,9 @@
 {
+  "run": {
+    "commit": "e28977f",
+    "branch": "main",
+    "command": "python eval/run_eval.py --json eval/results/baseline_sep.json"
+  },
   "summary": {
     "profiles_total": 5,
     "profiles_scored": 5,
@@ -12,9 +17,10 @@
       "3": 0.8666666666666666,
       "5": 0.52
     },
-    "mean_cosine": 0.7822839048825022,
+    "mean_cosine": 0.774065147170147,
     "budget_filter_pass_rate": 1.0,
-    "budget_profiles_passing": 5
+    "budget_profiles_passing": 5,
+    "profiles_with_unreachable_expected": []
   },
   "profiles": [
     {
@@ -22,6 +28,7 @@
       "budget_max": 2500,
       "n_relevant": 3,
       "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
       "unknown_relevant": [],
       "unscored_tags": [
         "walkable"
@@ -52,7 +59,7 @@
       "recommended_with_imputed_rent": [],
       "recommended_zero_population": [],
       "engine_status": "ok",
-      "candidate_count": 72,
+      "candidate_count": 67,
       "active_features": [
         "transit"
       ]
@@ -62,6 +69,7 @@
       "budget_max": 2000,
       "n_relevant": 3,
       "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
       "unknown_relevant": [],
       "unscored_tags": [
         "walkable"
@@ -69,11 +77,11 @@
       "status": "ok",
       "error": null,
       "returned_zips": [
-        "33186",
         "33015",
         "33012",
         "33033",
-        "33157"
+        "33157",
+        "33032"
       ],
       "precision": {
         "3": 0.0,
@@ -83,7 +91,7 @@
         "3": 1.0,
         "5": 0.6
       },
-      "mean_cosine": 0.7511608769546678,
+      "mean_cosine": 0.7245528478532611,
       "budget_pass": true,
       "budget_violations": [],
       "rent_echo_mismatches": [],
@@ -94,7 +102,7 @@
       "recommended_with_imputed_rent": [],
       "recommended_zero_population": [],
       "engine_status": "ok",
-      "candidate_count": 61,
+      "candidate_count": 52,
       "active_features": [
         "social"
       ]
@@ -104,6 +112,7 @@
       "budget_max": 1800,
       "n_relevant": 2,
       "n_reachable_relevant": 2,
+      "unreachable_relevant": [],
       "unknown_relevant": [],
       "unscored_tags": [],
       "status": "ok",
@@ -134,7 +143,7 @@
       "recommended_with_imputed_rent": [],
       "recommended_zero_population": [],
       "engine_status": "ok",
-      "candidate_count": 49,
+      "candidate_count": 31,
       "active_features": [
         "transit",
         "co_living_friendly"
@@ -145,6 +154,7 @@
       "budget_max": 2200,
       "n_relevant": 3,
       "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
       "unknown_relevant": [],
       "unscored_tags": [
         "pet_friendly"
@@ -152,11 +162,11 @@
       "status": "ok",
       "error": null,
       "returned_zips": [
-        "33129",
-        "33154",
+        "33187",
         "33184",
         "33140",
-        "33035"
+        "33035",
+        "33190"
       ],
       "precision": {
         "3": 0.0,
@@ -166,7 +176,7 @@
         "3": 1.0,
         "5": 0.6
       },
-      "mean_cosine": 0.8217619237373602,
+      "mean_cosine": 0.8072761642769904,
       "budget_pass": true,
       "budget_violations": [],
       "rent_echo_mismatches": [],
@@ -175,7 +185,7 @@
       "recommended_with_imputed_rent": [],
       "recommended_zero_population": [],
       "engine_status": "ok",
-      "candidate_count": 65,
+      "candidate_count": 60,
       "active_features": [
         "quiet"
       ]
@@ -185,6 +195,7 @@
       "budget_max": 3000,
       "n_relevant": 2,
       "n_reachable_relevant": 2,
+      "unreachable_relevant": [],
       "unknown_relevant": [],
       "unscored_tags": [],
       "status": "ok",
@@ -213,7 +224,7 @@
       "recommended_with_imputed_rent": [],
       "recommended_zero_population": [],
       "engine_status": "ok",
-      "candidate_count": 75,
+      "candidate_count": 74,
       "active_features": [
         "transit",
         "social"
