@@ -38,7 +38,29 @@ def test_one_snippet_can_mention_several_themes():
     found = _themes("Great walkability and easy bus access; felt welcoming.")
     assert set(found) == {"walkable", "transit", "social"}
     assert all(stance == "supports" for stance, _ in found.values())
-    assert found["transit"][1] == "bus"
+    assert "bus" in found["transit"][1]
+
+
+def test_a_bare_topic_word_is_a_mention_not_support():
+    assert _themes("I took the bus to work.")["transit"] == ("mentions", "bus")
+    assert _themes("Saw a few dogs.")["pet_friendly"][0] == "mentions"
+
+
+def test_negative_qualifiers_turn_topic_words_against_the_theme():
+    found = _themes("Poor bus service and dangerous sidewalks.")
+    assert found["transit"][0] == "contradicts"
+    assert found["walkable"][0] == "contradicts"
+
+
+def test_a_negated_qualifier_flips_too():
+    assert _themes("Miami is not the best city for public transportation.")["transit"][0] == "contradicts"
+    assert _themes("The buses aren't reliable.")["transit"][0] == "contradicts"
+
+
+def test_qualifiers_only_apply_within_their_own_clause():
+    found = _themes("Great bus access but dangerous sidewalks.")
+    assert found["transit"][0] == "supports"
+    assert found["walkable"][0] == "contradicts"
 
 
 def test_matching_ignores_case_and_needs_whole_words():
@@ -58,6 +80,13 @@ def test_negation_flips_a_contradicting_cue():
     assert _themes("This area is not noisy.")["quiet"] == ("supports", "not noisy")
     assert _themes("Close to downtown without the traffic and noise.")["quiet"][0] == "supports"
     assert _themes("You don't need a car here.")["walkable"][0] == "supports"
+
+
+def test_not_only_is_emphasis_not_negation():
+    found = _themes("Not only walkable but also quiet.")
+    assert found["walkable"][0] == "supports"
+    assert found["quiet"][0] == "supports"
+    assert _themes("Not just quiet, it's peaceful.")["quiet"][0] == "supports"
 
 
 def test_negation_only_reaches_three_words():
@@ -142,7 +171,9 @@ def test_themes_for_zip_groups_by_theme_and_handles_unknown_zips():
 STANCES = {
     "33130": {"transit": {"supports"}, "quiet": {"contradicts"}},
     "33127": {"social": {"supports"}},
+    "33128": {"transit": {"mentions"}},
 }
+REVIEW_ZIPS = {"33130", "33127", "33128", "33142"}  # 33142 has reviews but no theme match
 
 
 def test_a_pair_is_covered_by_any_review_on_a_requested_tag():
@@ -155,8 +186,24 @@ def test_a_review_against_the_tag_covers_but_does_not_support():
     row = cov.score_profile("P", ["quiet"], ["33130"], STANCES)
     pair = row["pairs"][0]
     assert pair["covered"] and not pair["supported"]
-    s = cov.summarize([row], STANCES)
+    s = cov.summarize([row], STANCES, REVIEW_ZIPS)
     assert s["contradicted"] == [{"profile_id": "P", "zip": "33130"}]
+
+
+def test_a_mention_covers_but_neither_supports_nor_contradicts():
+    row = cov.score_profile("P", ["transit"], ["33128"], STANCES)
+    pair = row["pairs"][0]
+    assert pair["covered"] and not pair["supported"]
+    assert cov.summarize([row], STANCES, REVIEW_ZIPS)["contradicted"] == []
+
+
+def test_review_availability_counts_reviews_with_no_theme_match():
+    row = cov.score_profile("P", ["transit"], ["33142", "99999"], STANCES)
+    s = cov.summarize([row], STANCES, REVIEW_ZIPS)
+    assert (s["zips_with_reviews"], s["zips_with_theme_matches"]) == (4, 3)
+    assert s["recommended_zips_with_reviews"] == 1
+    assert s["recommended_zips_with_theme_matches"] == 0
+    assert s["covered_pairs"] == 0
 
 
 def test_profiles_without_theme_tags_are_skipped_not_scored_as_zero():
@@ -164,7 +211,7 @@ def test_profiles_without_theme_tags_are_skipped_not_scored_as_zero():
         cov.score_profile("A", ["co_living"], ["33130"], STANCES),
         cov.score_profile("B", ["transit"], ["33130", "33127"], STANCES),
     ]
-    s = cov.summarize(rows, STANCES)
+    s = cov.summarize(rows, STANCES, REVIEW_ZIPS)
     assert s["profiles_skipped"] == ["A"] and s["profiles_scored"] == 1
     assert s["theme_coverage"] == 0.5 and s["total_pairs"] == 2
 
@@ -174,7 +221,7 @@ def test_summary_rates_and_per_tag_breakdown():
         cov.score_profile("A", ["transit", "social"], ["33130", "33127"], STANCES),
         cov.score_profile("B", ["social"], ["33130"], STANCES),
     ]
-    s = cov.summarize(rows, STANCES)
+    s = cov.summarize(rows, STANCES, REVIEW_ZIPS)
     assert (s["covered_pairs"], s["total_pairs"]) == (2, 3)
     assert s["per_tag"]["transit"] == {"covered": 1, "total": 2, "rate": 0.5}
     assert s["per_tag"]["social"]["covered"] == 1 and s["per_tag"]["social"]["total"] == 3
@@ -184,7 +231,7 @@ def test_summary_rates_and_per_tag_breakdown():
 
 def test_empty_and_errored_runs_do_not_divide_by_zero():
     errored = dict(cov.score_profile("E", ["transit"], [], STANCES), error="ValueError: bad")
-    s = cov.summarize([errored], STANCES)
+    s = cov.summarize([errored], STANCES, REVIEW_ZIPS)
     assert s["theme_coverage"] is None and s["profiles_errored"] == ["E"]
 
 

@@ -12,10 +12,14 @@ matching the user's priority tags. Concretely:
 - Theme coverage = covered pairs / all pairs across scored profiles.
 
 Coverage asks whether there is crowd text to explain a match, not whether
-the text agrees with it, so a review saying an area is noisy still covers a
-"quiet" tag. The `supported` rate counts only pairs with a review that speaks
-for the tag, and `contradicted` lists pairs where every review on the tag
-speaks against it.
+the text agrees with it, so a review saying an area is noisy, or one that
+only mentions the bus, still covers the tag. The `supported` rate counts only
+pairs with a review that speaks for the tag, and `contradicted` lists pairs
+whose reviews on the tag speak against it and never for it.
+
+Review availability is counted from the raw snippets, separately from what
+the extractor matched, so low coverage can be traced to either missing
+reviews or reviews that never mention the tag.
 
 Recommendations come from eval/run_eval.py's evaluate_profile, so this
 reports on exactly the ZIPs the Layer 1 eval scores, with the same --data and
@@ -78,7 +82,10 @@ def score_profile(profile_id: str, tags: list[str], returned_zips: list[str],
     return row
 
 
-def summarize(rows: list[dict], stances: dict[str, dict[str, set[str]]]) -> dict:
+def summarize(rows: list[dict], stances: dict[str, dict[str, set[str]]],
+              review_zips: set[str]) -> dict:
+    """Scorecard numbers. `review_zips` is every ZIP with at least one review,
+    matched or not, so availability is not limited to what the extractor found."""
     scored = [r for r in rows if r["theme_tags"] and not r.get("error")]
     pairs = [p for r in scored for p in r["pairs"]]
     covered = sum(p["covered"] for p in pairs)
@@ -101,14 +108,17 @@ def summarize(rows: list[dict], stances: dict[str, dict[str, set[str]]]) -> dict
         "per_tag": per_tag,
         "contradicted": [
             {"profile_id": r["profile_id"], "zip": p["zip"]}
-            for r in scored for p in r["pairs"] if p["covered"] and not p["supported"]
+            for r in scored for p in r["pairs"]
+            if not p["supported"] and any("contradicts" in s for s in p["themes_found"].values())
         ],
         "profiles_scored": len(scored),
         "profiles_skipped": [r["profile_id"] for r in rows if not r["theme_tags"] and not r.get("error")],
         "profiles_errored": [r["profile_id"] for r in rows if r.get("error")],
-        "zips_with_reviews": len(stances),
+        "zips_with_reviews": len(review_zips),
+        "zips_with_theme_matches": len(stances),
         "recommended_zips": len(recommended),
-        "recommended_zips_with_reviews": len(recommended & set(stances)),
+        "recommended_zips_with_reviews": len(recommended & set(review_zips)),
+        "recommended_zips_with_theme_matches": len(recommended & set(stances)),
     }
 
 
@@ -137,11 +147,13 @@ def render(rows: list[dict], summary: dict) -> None:
         for tag, v in s["per_tag"].items():
             print(f"  {tag:<14}{_pct(v['rate']):>7}  ({v['covered']}/{v['total']})")
     print(
-        f"\nReviews cover {s['zips_with_reviews']} ZIPs; "
-        f"{s['recommended_zips_with_reviews']} of the {s['recommended_zips']} recommended ZIPs have any."
+        f"\nReviews cover {s['zips_with_reviews']} ZIPs "
+        f"({s['zips_with_theme_matches']} with a theme match). Of the {s['recommended_zips']} "
+        f"recommended ZIPs, {s['recommended_zips_with_reviews']} have reviews and "
+        f"{s['recommended_zips_with_theme_matches']} have a theme match."
     )
     if s["contradicted"]:
-        print("Covered only by reviews speaking against the tag: "
+        print("Reviews only speak against the tag: "
               + ", ".join(f"{c['profile_id']}@{c['zip']}" for c in s["contradicted"]))
     if s["profiles_skipped"]:
         print(f"Skipped (no theme tags): {', '.join(s['profiles_skipped'])}")
@@ -174,7 +186,7 @@ def main() -> int:
         if evaluated["error"]:
             row["error"] = f"{evaluated['status']}: {evaluated['error']}"
         rows.append(row)
-    summary = summarize(rows, stances)
+    summary = summarize(rows, stances, set(snippets["zip"].dropna()))
     render(rows, summary)
 
     if args.json:

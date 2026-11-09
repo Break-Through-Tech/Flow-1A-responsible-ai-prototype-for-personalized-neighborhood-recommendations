@@ -161,11 +161,11 @@ The diagnostics block also lists each unreachable expected ZIP with the reason, 
 | Column | Meaning |
 |--------|---------|
 | `theme` | One of the five themes |
-| `stance` | `supports` if the review speaks for the theme, `contradicts` if against ("street noise is real" contradicts `quiet`) |
+| `stance` | `supports` if the review speaks for the theme, `contradicts` if against ("street noise is real" contradicts `quiet`), `mentions` if it only names the topic ("I took the bus") |
 | `evidence` | The exact phrase that matched, so any claim can be traced back to the text |
 | `labeled_theme` | The hand label, kept for comparison |
 
-The extractor is a keyword list in the same file, not a model, so every match can be explained. A negation up to three words before a cue flips its stance ("not walkable" contradicts, "not noisy" supports). If a review says both, `contradicts` wins, so the theme is never overstated. Nothing is generated or paraphrased.
+The extractor is a keyword list in the same file, not a model, so every match can be explained. Words that judge a theme on their own (walkable, quiet, noisy) set the stance directly. Plain topic words (bus, sidewalks, dogs, bars) are only a `mention` until a qualifier in the same clause says otherwise: "poor bus service" contradicts transit, "easy bus access" supports it, and "great bus access but dangerous sidewalks" splits at "but". A negation up to three words before a cue or qualifier flips its stance ("not walkable", "not the best city for transit"); "not only" and "not just" are treated as emphasis. If a review says both, `contradicts` wins, so the theme is never overstated. Nothing is generated or paraphrased.
 
 ```bash
 python scripts/theme_extraction.py                    # counts per theme, reviews with no theme, labels the text never mentions
@@ -181,7 +181,7 @@ python eval/theme_coverage.py
 python eval/theme_coverage.py --json eval/results/theme_coverage.json
 ```
 
-It uses the same recommendations as `eval/run_eval.py` and accepts the same `--profiles`, `--data` and `--top-k` flags, plus `--snippets`. Profiles with no extractable tag (e.g. only `co_living`) are skipped rather than scored as 0. Coverage counts a review whether it agrees or not; the `supported` rate counts only reviews that speak for the tag. The output also says how many recommended ZIPs have any reviews at all. When that number is small, coverage is limited by the corpus, not the extractor.
+It uses the same recommendations as `eval/run_eval.py` and accepts the same `--profiles`, `--data` and `--top-k` flags, plus `--snippets`. Profiles with no extractable tag (e.g. only `co_living`) are skipped rather than scored as 0. Coverage counts a review whether it agrees, disagrees or only mentions the topic; the `supported` rate counts only reviews that speak for the tag. The output also reports, separately, how many recommended ZIPs have any reviews at all (counted from the raw snippets) and how many have a theme match. If few ZIPs have reviews, coverage is limited by the corpus; if many have reviews but few matches, it is limited by the extractor.
 
 Checks: `python eval/test_theme_coverage.py`. The tests use made-up sentences, so they keep passing when the corpus changes.
 
