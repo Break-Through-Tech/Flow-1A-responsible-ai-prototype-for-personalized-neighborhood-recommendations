@@ -238,7 +238,7 @@ def test_cli_json_output_matches_the_printed_run():
     out = Path(tempfile.mkdtemp()) / "nested" / "result.json"
     assert _cli("--json", str(out)).returncode == 0
     payload = json.loads(out.read_text(encoding="utf-8"))
-    assert payload["summary"]["profiles_total"] == len(payload["profiles"]) == 5
+    assert payload["summary"]["profiles_total"] == len(payload["profiles"]) == len(h.load_profiles(h.PROFILES_PATH))
     assert set(payload["summary"]["precision"]) == {"3", "5"}
 
 
