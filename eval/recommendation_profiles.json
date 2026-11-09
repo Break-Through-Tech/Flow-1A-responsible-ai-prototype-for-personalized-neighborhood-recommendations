@@ -107,7 +107,7 @@
     "housing_preference": "own_apartment",
     "tags": ["transit", "quiet"],
     "expected_relevant_zips": ["33128", "33136", "33127"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33012", "33157"]
   },
   {
     "profile_id": "P12_solo_own_apt_no_budget_match",
@@ -127,7 +127,7 @@
     "housing_preference": "own_apartment",
     "tags": ["social", "quiet"],
     "expected_relevant_zips": ["33128", "33136", "33137"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33031", "33182"]
   },
   {
     "profile_id": "P14_solo_coliving_transit_social",
@@ -137,7 +137,7 @@
     "housing_preference": "co_living",
     "tags": ["co_living", "transit", "social"],
     "expected_relevant_zips": ["33127", "33130", "33128"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33031", "33184"]
   },
   {
     "profile_id": "P15_co_leaser_coliving_transit_quiet",
@@ -147,7 +147,7 @@
     "housing_preference": "co_living",
     "tags": ["co_living", "transit", "quiet"],
     "expected_relevant_zips": ["33128", "33127", "33137"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33182", "33187"]
   },
   {
     "profile_id": "P16_solo_own_apt_transit_social_high_budget",
@@ -157,7 +157,7 @@
     "housing_preference": "own_apartment",
     "tags": ["transit", "social"],
     "expected_relevant_zips": ["33142", "33157", "33012"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33122", "33194"]
   },
   {
     "profile_id": "P17_solo_own_apt_exact_budget",
@@ -167,7 +167,7 @@
     "housing_preference": "own_apartment",
     "tags": ["transit"],
     "expected_relevant_zips": ["33130"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33176", "33033"]
   },
   {
     "profile_id": "P18_solo_own_apt_extreme_budget_quiet",
@@ -177,7 +177,7 @@
     "housing_preference": "own_apartment",
     "tags": ["quiet"],
     "expected_relevant_zips": ["33122", "33031", "33194"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33012", "33157"]
   },
   {
     "profile_id": "P19_solo_own_apt_unscored_preferences",
@@ -187,7 +187,7 @@
     "housing_preference": "own_apartment",
     "tags": ["walkable", "pet_friendly", "transit"],
     "expected_relevant_zips": ["33128", "33135", "33125"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33184", "33156"]
   },
   {
     "profile_id": "P20_co_leaser_own_apt_social_quiet_tight_budget",
@@ -197,7 +197,7 @@
     "housing_preference": "own_apartment",
     "tags": ["social", "quiet"],
     "expected_relevant_zips": ["33128", "33136"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33167", "33034"]
   }
 ]
 
