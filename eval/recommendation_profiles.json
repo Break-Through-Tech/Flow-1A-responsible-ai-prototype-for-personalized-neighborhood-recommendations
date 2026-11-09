@@ -121,8 +121,8 @@
   },
   {
     "profile_id": "P13_co_leaser_own_apt_social_quiet",
-    "description": "Moving with a co-leaser, prefers their own apartment and values both social activity and quiet. Expected ZIPs balance strong social and quiet scores within a $2,200 budget.",
-    "budget_max": 2200,
+    "description": "Moving with a co-leaser, prefers their own apartment and values both social activity and quiet. Expected ZIPs balance both features within a $2,500 budget using refreshed rent data.",
+    "budget_max": 2500,
     "household": "with_co_leaser",
     "housing_preference": "own_apartment",
     "tags": ["social", "quiet"],
@@ -141,8 +141,8 @@
   },
   {
     "profile_id": "P15_co_leaser_coliving_transit_quiet",
-    "description": "Moving with a co-leaser, prefers co-living with a $2,300 budget, prioritizing transit and quiet. Expected ZIPs balance transit, quiet, and co-living scores while meeting the budget.",
-    "budget_max": 2300,
+    "description": "Moving with a co-leaser, prefers co-living and prioritizes transit and quiet. Expected ZIPs balance these features within a $2,500 budget using refreshed rent data.",
+    "budget_max": 2500,
     "household": "with_co_leaser",
     "housing_preference": "co_living",
     "tags": ["co_living", "transit", "quiet"],
@@ -161,8 +161,8 @@
   },
   {
     "profile_id": "P17_solo_own_apt_exact_budget",
-    "description": "Solo mover seeking their own apartment with a $1,553 budget and transit preference. Tests whether ZIPs priced exactly at the budget limit remain eligible.",
-    "budget_max": 1553,
+    "description": "Solo mover seeking their own apartment with a budget exactly equal to ZIP 33130's updated median rent of $1,792. Tests whether ZIPs priced exactly at the budget limit remain eligible.",
+    "budget_max": 1792,
     "household": "alone",
     "housing_preference": "own_apartment",
     "tags": ["transit"],
@@ -191,8 +191,8 @@
   },
   {
     "profile_id": "P20_co_leaser_own_apt_social_quiet_tight_budget",
-    "description": "Moving with a co-leaser, wants their own apartment with a tight $1,200 budget, prioritizing both social activity and quiet. Expected ZIPs balance both features while meeting the restrictive budget.",
-    "budget_max": 1200,
+    "description": "Moving with a co-leaser, wants their own apartment with a restrictive $1,550 budget, prioritizing both social activity and quiet. Expected ZIPs balance both features and meet the refreshed rent budget.",
+    "budget_max": 1550,
     "household": "with_co_leaser",
     "housing_preference": "own_apartment",
     "tags": ["social", "quiet"],
