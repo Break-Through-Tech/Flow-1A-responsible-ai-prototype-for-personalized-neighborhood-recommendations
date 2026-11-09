@@ -61,8 +61,8 @@
   },
   {
     "profile_id": "P7_solo_own_apt_low_budget_transit",
-    "description": "Solo mover seeking their own apartment with a $1,400 budget, prioritizing transit. Expected ZIPs have the highest transit scores among budget-eligible ZIPs with non-suppressed rents.",
-    "budget_max": 1400,
+    "description": "Solo mover seeking their own apartment with a $1,600 budget, prioritizing transit. Expected ZIPs have strong transit scores and meet the updated rent budget.",
+    "budget_max": 1600,
     "household": "alone",
     "housing_preference": "own_apartment",
     "tags": ["transit"],
@@ -71,8 +71,8 @@
   },
   {
     "profile_id": "P8_solo_coliving_quiet",
-    "description": "Solo mover preferring co-living and a quieter environment, with a $2,500 budget. Expected ZIPs have relatively strong quiet and co-living scores and meet the budget.",
-    "budget_max": 2500,
+    "description": "Solo mover preferring co-living and a quieter environment, with a $2,700 budget. Expected ZIPs have relatively strong quiet and co-living scores and meet the updated rent budget.",
+    "budget_max": 2700,
     "household": "alone",
     "housing_preference": "co_living",
     "tags": ["co_living", "quiet"],
@@ -91,8 +91,8 @@
   },
   {
     "profile_id": "P10_co_leaser_coliving_social_budget",
-    "description": "Moving with a co-leaser, prefers co-living and social activity on a $1,600 budget. Expected ZIPs have high social scores, moderate co-living scores, and meet the budget.",
-    "budget_max": 1600,
+    "description": "Moving with a co-leaser, prefers co-living and social activity on a $1,800 budget. Expected ZIPs have high social scores, moderate co-living scores, and meet the updated rent budget.",
+    "budget_max": 1800,
     "household": "with_co_leaser",
     "housing_preference": "co_living",
     "tags": ["co_living", "social"],
