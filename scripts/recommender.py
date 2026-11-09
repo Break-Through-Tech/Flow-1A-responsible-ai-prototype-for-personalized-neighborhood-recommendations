@@ -9,6 +9,10 @@ _ROOT = Path(__file__).resolve().parents[1]  # project folder one level up
 if str(_ROOT) not in sys.path:  # if Python cannot see the project yet
     sys.path.insert(0, str(_ROOT))  # add the project folder so imports work
 
+from scripts.co_leaser_guardrail import (  # household and housing type stay independent
+    VALID_HOUSEHOLDS,  # only copy of the allowed household values
+    validate_household_housing,  # checks each input and returns both unchanged
+)
 from scripts.feature_schema import (  # use Task #5 instead of copying it
     BUDGET_COLUMN,  # rent column used for the hard budget filter
     CONDITIONAL_FEATURES,  # extra features that only apply to some housing types
@@ -22,7 +26,6 @@ from scripts.feature_schema import (  # use Task #5 instead of copying it
 
 _DATA_PATH = _ROOT / "data" / "area_features_clean.csv"  # cleaned ZIP data file
 _REQUIRED_KEYS = ("household", "housing_preference", "budget_max", "tags")  
-VALID_HOUSEHOLDS = {"alone", "with_co_leaser"}  
 DEFAULT_TOP_K = 5  
 
 
@@ -55,9 +58,10 @@ def _unscored_tags(tags: list[str], housing_preference: str) -> list[str]:
 def validate_profile(profile: dict, top_k: int = DEFAULT_TOP_K) -> dict:
     """Validate a user profile and resolve the Task #5 feature lists.
 
-    Duplicate tags collapse to one. Unknown tags and housing preferences
-    raise through Task #5. No scored preference raises here: cosine
-    similarity is undefined for a zero user vector.
+    Household and housing preference are checked together and returned
+    unchanged. Duplicate tags collapse to one. Unknown tags raise through
+    Task #5. No scored preference raises here: cosine similarity is
+    undefined for a zero user vector.
     """
     if not isinstance(profile, dict):  # profile must be a dictionary
         raise ValueError("profile must be a dict")  # stop if it is not
@@ -66,9 +70,10 @@ def validate_profile(profile: dict, top_k: int = DEFAULT_TOP_K) -> dict:
     if missing:  
         raise ValueError(f"Profile missing keys: {missing}")  # stop and name the missing fields
 
-    household = profile["household"]  # who the user lives with
-    if household not in VALID_HOUSEHOLDS:  # only two household values are allowed
-        raise ValueError(f"Unknown household: {household}")  # stop if the value is unknown
+    # Check household and housing type separately. Neither value is rewritten.
+    household, housing_preference = validate_household_housing(
+        profile["household"], profile["housing_preference"]
+    )
 
     budget_max = profile["budget_max"]  # max rent the user will pay
     if (  
@@ -84,7 +89,6 @@ def validate_profile(profile: dict, top_k: int = DEFAULT_TOP_K) -> dict:
         raise ValueError("tags must be a list of strings")  
     tags = list(dict.fromkeys(tags))  
 
-    housing_preference = profile["housing_preference"]  # own apartment or co-living
     vector_features = get_vector_features(housing_preference)  # full cosine vector from Task #5
     active_features = get_active_features(tags, housing_preference)  # scored tags the user picked
     outside = [feature for feature in active_features if feature not in vector_features]  # active features that do not belong
