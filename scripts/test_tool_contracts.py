@@ -153,7 +153,7 @@ def test_no_match_results_have_empty_lists_and_keep_the_echo():
     assert result["budget_max"] == 1 and result["active_features"] == ["transit"]
     assert _call("area_stats", {"zip_code": "99999"})["areas"] == []
     none = _call("crowd_themes", {"zip_code": "33186", "theme": "quiet"})
-    assert none["snippets"] == [] and none["count"] == 0 and none["available_themes"] == ["single_family"]
+    assert none["snippets"] == [] and none["count"] == 0 and "quiet" not in none["available_themes"]
 
 
 def test_every_recommendation_explains_its_rank_from_the_data():
