@@ -57,6 +57,33 @@ def test_a_negated_qualifier_flips_too():
     assert _themes("The buses aren't reliable.")["transit"][0] == "contradicts"
 
 
+# (sentence, theme, expected stance): phrasings that broke earlier versions.
+TRICKY = [
+    ("The metro station is not far.", "transit", "supports"),
+    ("Buses are not bad at all.", "transit", "supports"),
+    ("Getting downtown by bus isn't hard.", "transit", "supports"),
+    ("No problem getting around by bus.", "transit", "supports"),
+    ("No complaints about the trolley.", "transit", "supports"),
+    ("Great late-night bars.", "social", "supports"),
+    ("Never a dull moment with all the events.", "social", "supports"),
+    ("So far so good, lots of restaurants.", "social", "supports"),
+    ("The bus is great, the sidewalks are dangerous.", "transit", "supports"),
+    ("The bus is great, the sidewalks are dangerous.", "walkable", "contradicts"),
+    ("The bus, sadly, is unreliable.", "transit", "contradicts"),
+    ("The trains are always late.", "transit", "contradicts"),
+    ("Too far from the metro.", "transit", "contradicts"),
+    ("No sidewalks anywhere.", "walkable", "contradicts"),
+    ("Close to the bus but far from the beach.", "transit", "supports"),
+    ("I walk my dog here every day.", "pet_friendly", "mentions"),
+]
+
+
+def test_tricky_phrasings():
+    wrong = [(t, theme, want, _themes(t).get(theme, (None,))[0])
+             for t, theme, want in TRICKY if _themes(t).get(theme, (None,))[0] != want]
+    assert not wrong, wrong
+
+
 def test_qualifiers_only_apply_within_their_own_clause():
     found = _themes("Great bus access but dangerous sidewalks.")
     assert found["transit"][0] == "supports"
@@ -140,6 +167,10 @@ def test_load_snippets_reads_zips_as_strings_and_rejects_a_changed_schema():
     good = d / "good.csv"
     _snippets([("S1", " 01234 ", "src", "transit", "bus")]).to_csv(good, index=False)
     assert te.load_snippets(good)["zip"].tolist() == ["01234"]
+
+    blank = d / "blank.csv"
+    _snippets([("S1", "", "src", "transit", "bus"), ("S2", "33130", "src", "transit", "bus")]).to_csv(blank, index=False)
+    assert te.load_snippets(blank)["snippet_id"].tolist() == ["S2"]
 
     bad = d / "bad.csv"
     pd.DataFrame({"snippet_id": ["S1"], "zip": ["33130"], "text": ["bus"]}).to_csv(bad, index=False)

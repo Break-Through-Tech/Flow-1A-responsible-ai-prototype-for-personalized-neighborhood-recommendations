@@ -50,7 +50,7 @@ STANCES = ("supports", "contradicts", "mentions")
 # same clause. Matched case-insensitively on word boundaries.
 LEXICON: dict[str, dict[str, list[str]]] = {
     "transit": {
-        "supports": [r"without a car", r"get around"],
+        "supports": [r"without a car", r"get(ting)? around"],
         "contradicts": [r"need(s|ed)? a car", r"car[- ]dependent"],
         "mentions": [
             r"bus(es)?", r"bus stops?", r"metro(rail|mover|bus)?", r"trains?", r"trolle(y|ys)",
@@ -93,25 +93,31 @@ LEXICON: dict[str, dict[str, list[str]]] = {
 
 # A cue up to three words after one of these flips stance: "not walkable" and
 # "no bus" speak against the theme; "not noisy" and "without the traffic and
-# noise" speak for quiet. "not only" / "not just" add emphasis, not negation.
+# noise" speak for quiet; "not far" and "isn't hard" speak for it too.
+# "not only" / "not just" add emphasis, and "no problem" / "no complaints" are
+# praise, so neither counts as negation.
 _NEGATION = re.compile(
-    r"\b(not(?!\s+(only|just)\b)|no|never|isn't|wasn't|aren't|don't|doesn't|can't|cannot|without|hardly|lacks?|lacking)"
+    r"\b(not(?!\s+(only|just)\b)|no(?!\s+(problems?|issues?|complaints?|trouble)\b)|never(?!\s+a\s+dull\b)"
+    r"|isn't|wasn't|aren't|don't|doesn't|can't|cannot|without|hardly|lacks?|lacking)"
     r"(\s+[\w'-]+){0,3}\s+$",
     re.IGNORECASE,
 )
 _FLIP = {"supports": "contradicts", "contradicts": "supports"}
 
-# Qualifiers that give a plain topic word its stance when they sit in the same
-# clause ("poor bus service", "easy bus access"). A clause ends at . ; ! ? or
-# "but", so "great bus access but dangerous sidewalks" splits correctly.
+# Qualifiers that give a plain topic word its stance ("poor bus service",
+# "easy bus access"). Each topic word takes the nearest qualifier in its clause,
+# so "the bus is great, the sidewalks are dangerous" splits correctly. A clause
+# ends at . ; ! ? or "but". Plain "no" / "never" are handled as negation of the
+# topic word itself ("no bus"), not as qualifiers.
 _POSITIVE = re.compile(
     r"\b(easy|easily|great|good|convenient|close|nearby|near|love[sd]?|plenty|lots of|many|"
-    r"reliable|accessible|short|quick|fast|safe|best|perfect|amazing|nice|friendly|welcoming|fun)\b",
+    r"reliable|accessible|short|quick|fast|safe|best|perfect|amazing|nice|friendly|welcoming|fun|"
+    r"no (problems?|issues?|complaints?|trouble)|never a dull moment)\b",
     re.IGNORECASE,
 )
 _NEGATIVE = re.compile(
-    r"\b(poor|bad|terrible|awful|horrible|dangerous|unsafe|delayed|late|unreliable|lack\w*|"
-    r"hard|difficult|no|never|limited|far|broken|dirty|nightmare|worst)\b",
+    r"\b(poor|bad|terrible|awful|horrible|dangerous|unsafe|delayed|late(?![- ]?night)|unreliable|"
+    r"lack\w*|hard|difficult|limited|(?<!so )far|broken|dirty|nightmare|worst)\b",
     re.IGNORECASE,
 )
 _CLAUSE_BREAK = re.compile(r"[.;!?]|\bbut\b", re.IGNORECASE)
@@ -128,27 +134,34 @@ THEME_COLUMNS = ["snippet_id", "zip", "source", "theme", "stance", "evidence", "
 SNIPPET_COLUMNS = ("snippet_id", "zip", "source", "theme", "text")
 
 
-def _clause(text: str, start: int, end: int) -> str:
-    """The clause around text[start:end], bounded by punctuation or "but"."""
+def _clause_span(text: str, start: int, end: int) -> tuple[int, int]:
+    """Bounds of the clause around text[start:end], split at punctuation or "but"."""
     left = max((m.end() for m in _CLAUSE_BREAK.finditer(text, 0, start)), default=0)
     right = next((m.start() for m in _CLAUSE_BREAK.finditer(text, end)), len(text))
-    return text[left:right]
+    return left, right
 
 
-def _qualifier_stance(clause: str) -> str:
-    """Stance a clause gives a plain topic word, with negated qualifiers flipped.
+def _qualifier_stance(text: str, start: int, end: int) -> str:
+    """Stance the nearest qualifier gives the topic word at text[start:end].
 
     "poor bus service" -> contradicts; "easy bus access" -> supports;
-    "not the best city for transit" -> contradicts; no qualifier -> mentions.
+    "not the best city for transit" and "the station is not far" flip;
+    no qualifier in the clause -> mentions. A tie in distance goes to
+    contradicts, so the theme is never overstated.
     """
-    seen = set()
+    left, right = _clause_span(text, start, end)
+    best = None
     for pattern, stance in ((_NEGATIVE, "contradicts"), (_POSITIVE, "supports")):
-        for q in pattern.finditer(clause):
-            negated = stance == "supports" and _NEGATION.search(clause[: q.start()])
-            seen.add(_FLIP[stance] if negated else stance)
-    if "contradicts" in seen:
-        return "contradicts"
-    return "supports" if "supports" in seen else "mentions"
+        for q in pattern.finditer(text, left, right):
+            if _NEGATION.search(text[left: q.start()]):
+                stance_here = _FLIP[stance]
+            else:
+                stance_here = stance
+            gap = q.start() - end if q.start() >= end else start - q.end()
+            rank = (max(gap, 0), stance_here != "contradicts")
+            if best is None or rank < best[0]:
+                best = (rank, stance_here)
+    return best[1] if best else "mentions"
 
 
 def _matches(text: str, theme: str) -> list[tuple[int, str, str]]:
@@ -158,9 +171,14 @@ def _matches(text: str, theme: str) -> list[tuple[int, str, str]]:
         for pattern in patterns:
             for m in pattern.finditer(text):
                 if stance == "mentions":
-                    clause = _clause(text, m.start(), m.end())
-                    qualified = _qualifier_stance(clause)
-                    evidence = m.group(0) if qualified == "mentions" else clause.strip()
+                    left, right = _clause_span(text, m.start(), m.end())
+                    negated = _NEGATION.search(text[left: m.start()])
+                    if negated:  # "no bus service", "never seen a dog"
+                        found.append((left + negated.start(), "contradicts",
+                                      text[left + negated.start(): m.end()]))
+                        continue
+                    qualified = _qualifier_stance(text, m.start(), m.end())
+                    evidence = m.group(0) if qualified == "mentions" else text[left:right].strip()
                     found.append((m.start(), qualified, evidence))
                     continue
                 negated = _NEGATION.search(text[: m.start()])
@@ -201,7 +219,8 @@ def load_snippets(path: Path = SNIPPETS_PATH) -> pd.DataFrame:
     if missing:
         raise ValueError(f"{path} is missing columns {missing}")
     snippets["zip"] = snippets["zip"].str.strip()
-    return snippets
+    # A review with no ZIP can't be tied to an area, so it counts nowhere.
+    return snippets[snippets["zip"].notna() & (snippets["zip"] != "")].reset_index(drop=True)
 
 
 def extract_themes(snippets: pd.DataFrame) -> pd.DataFrame:
