@@ -51,13 +51,13 @@
   },
   {
     "profile_id": "P6_co_leaser_coliving_transit",
-    "description": "Moving with a co-leaser, prefers co-living and transit access on a $1,800 budget. Expected ZIPs have strong transit and co-living scores, non-suppressed rents, and meet the budget.",
+    "description": "Moving with a co-leaser, prefers co-living and transit access on a $1,800 budget. Expected ZIPs have strong transit and co-living scores and meet the budget. Negative ZIPs are affordable but have relatively low co-living and transit scores.",
     "budget_max": 1800,
     "household": "with_co_leaser",
     "housing_preference": "co_living",
     "tags": ["co_living", "transit"],
     "expected_relevant_zips": ["33127", "33128", "33130"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33031", "33170"]
   },
   {
     "profile_id": "P7_solo_own_apt_low_budget_transit",
@@ -67,7 +67,7 @@
     "housing_preference": "own_apartment",
     "tags": ["transit"],
     "expected_relevant_zips": ["33150", "33136", "33142"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33170", "33167"]
   },
   {
     "profile_id": "P8_solo_coliving_quiet",
@@ -77,7 +77,7 @@
     "housing_preference": "co_living",
     "tags": ["co_living", "quiet"],
     "expected_relevant_zips": ["33128", "33129", "33132"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33012", "33157"]
   },
   {
     "profile_id": "P9_co_leaser_own_apt_quiet_high_budget",
@@ -87,7 +87,7 @@
     "housing_preference": "own_apartment",
     "tags": ["quiet"],
     "expected_relevant_zips": ["33122", "33031", "33194"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33012", "33157"]
   },
   {
     "profile_id": "P10_co_leaser_coliving_social_budget",
@@ -97,7 +97,7 @@
     "housing_preference": "co_living",
     "tags": ["co_living", "social"],
     "expected_relevant_zips": ["33012", "33157", "33033"],
-    "not_relevant_zips": []
+    "not_relevant_zips": ["33031", "33170"]
   },
   {
     "profile_id": "P11_solo_own_apt_transit_quiet",
