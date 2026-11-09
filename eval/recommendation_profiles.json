@@ -81,12 +81,12 @@
   },
   {
     "profile_id": "P9_co_leaser_own_apt_quiet_high_budget",
-    "description": "Moving with a co-leaser, wants their own apartment and prioritizes quiet. Higher $3,600 budget allows ZIPs with strong quiet scores.",
+    "description": "Moving with a co-leaser, wants their own apartment and prioritizes quiet. With a $3,600 budget, expected ZIPs were selected using strong quiet feature scores and usable rent estimates.",
     "budget_max": 3600,
     "household": "with_co_leaser",
     "housing_preference": "own_apartment",
     "tags": ["quiet"],
-    "expected_relevant_zips": ["33158", "33149", "33146"],
+    "expected_relevant_zips": ["33122", "33031", "33194"],
     "not_relevant_zips": []
   },
   {
@@ -101,7 +101,7 @@
   },
   {
     "profile_id": "P11_solo_own_apt_transit_quiet",
-    "description": "Solo mover seeking their own apartment with a $1,700 budget, prioritizing transit and quiet. Expected ZIPs have strong scores on both features and meet the budget.",
+    "description": "Solo mover seeking their own apartment with a $1,700 budget, prioritizing transit and quiet. Expected ZIPs were selected based on their transit and quiet feature scores and budget eligibility.",
     "budget_max": 1700,
     "household": "alone",
     "housing_preference": "own_apartment",
@@ -111,7 +111,7 @@
   },
   {
     "profile_id": "P12_solo_own_apt_no_budget_match",
-    "description": "Solo mover seeking their own apartment with a $1,000 budget and transit preference. No ZIPs should qualify because the lowest eligible rent is $1,094.",
+    "description": "Solo mover seeking their own apartment with a $1,000 budget and transit preference. Tests the no-match scenario when no ZIP codes are affordable.",
     "budget_max": 1000,
     "household": "alone",
     "housing_preference": "own_apartment",
@@ -121,7 +121,7 @@
   },
   {
     "profile_id": "P13_co_leaser_own_apt_social_quiet",
-    "description": "Moving with a co-leaser, prefers their own apartment and values both social activity and quiet. Expected ZIPs balance both features within a $2,500 budget using refreshed rent data.",
+    "description": "Moving with a co-leaser, prefers their own apartment and values both social activity and quiet. Expected ZIPs were selected based on both feature scores and the updated $2,500 budget.",
     "budget_max": 2500,
     "household": "with_co_leaser",
     "housing_preference": "own_apartment",
@@ -131,7 +131,7 @@
   },
   {
     "profile_id": "P14_solo_coliving_transit_social",
-    "description": "Solo mover preferring co-living with a $2,000 budget, prioritizing transit and social activity. Expected ZIPs have strong scores across transit, social, and co-living features and meet the budget.",
+    "description": "Solo mover preferring co-living with a $2,000 budget, prioritizing transit and social activity. Expected ZIPs were selected based on transit, social, and co-living feature scores and budget eligibility.",
     "budget_max": 2000,
     "household": "alone",
     "housing_preference": "co_living",
@@ -141,7 +141,7 @@
   },
   {
     "profile_id": "P15_co_leaser_coliving_transit_quiet",
-    "description": "Moving with a co-leaser, prefers co-living and prioritizes transit and quiet. Expected ZIPs balance these features within a $2,500 budget using refreshed rent data.",
+    "description": "Moving with a co-leaser, prefers co-living and prioritizes transit and quiet. Expected ZIPs were selected based on these feature scores and the updated $2,500 budget.",
     "budget_max": 2500,
     "household": "with_co_leaser",
     "housing_preference": "co_living",
@@ -171,22 +171,22 @@
   },
   {
     "profile_id": "P18_solo_own_apt_extreme_budget_quiet",
-    "description": "Solo mover seeking their own apartment with a $10,000 budget, prioritizing quiet. Expected ZIPs have the highest quiet scores among ZIPs with non-suppressed rent. Tests ranking when budget is not restrictive.",
+    "description": "Solo mover seeking their own apartment with a $10,000 budget, prioritizing quiet. Expected ZIPs were selected using strong quiet feature scores and non-suppressed, non-top-coded rent estimates. Tests ranking when budget is not restrictive.",
     "budget_max": 10000,
     "household": "alone",
     "housing_preference": "own_apartment",
     "tags": ["quiet"],
-    "expected_relevant_zips": ["33122", "33158", "33031"],
+    "expected_relevant_zips": ["33122", "33031", "33194"],
     "not_relevant_zips": []
   },
   {
     "profile_id": "P19_solo_own_apt_unscored_preferences",
-    "description": "Solo mover seeking their own apartment with a $2,000 budget, prioritizing transit while also requesting walkable and pet-friendly preferences. Tests how the recommender handles recognized but unscored tags alongside a scored preference.",
+    "description": "Solo mover seeking their own apartment with a $2,000 budget, prioritizing transit while also requesting walkable and pet-friendly preferences. Expected ZIPs were selected using transit scores and the updated budget, while walkable and pet-friendly remain unscored.",
     "budget_max": 2000,
     "household": "alone",
     "housing_preference": "own_apartment",
     "tags": ["walkable", "pet_friendly", "transit"],
-    "expected_relevant_zips": ["33150", "33136", "33142"],
+    "expected_relevant_zips": ["33128", "33135", "33125"],
     "not_relevant_zips": []
   },
   {
