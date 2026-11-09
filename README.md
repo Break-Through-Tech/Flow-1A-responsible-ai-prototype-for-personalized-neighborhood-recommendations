@@ -84,6 +84,33 @@ A three-layer system:
 
 See `MCP_SETUP.md` for the full contract.
 
+### Running the MCP server
+
+The tools are plain functions in `scripts/mcp_tools.py`, so you can call and test them without the server or an LLM. `scripts/mcp_server.py` registers them with the `mcp` SDK (v2, `MCPServer`).
+
+From the repo root, with the `.venv` active:
+
+```bash
+python -m scripts.mcp_server          # starts the server over stdio
+python scripts/test_mcp_tools.py      # tool + server checks (also runs under pytest)
+```
+
+You don't normally start the server by hand. An MCP client launches it. To connect a client such as Claude Desktop or the MCP Inspector, point it at the venv's Python:
+
+```json
+{
+  "mcpServers": {
+    "flow1a-neighborhoods": {
+      "command": "/absolute/path/to/repo/.venv/bin/python",
+      "args": ["-m", "scripts.mcp_server"],
+      "cwd": "/absolute/path/to/repo"
+    }
+  }
+}
+```
+
+Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. Top-coded ACS medians (rent `3501` = more than $3,500, home value `2000001` = more than $2,000,000) are kept but listed under `top_coded` with their floor, in both `area_stats` and `recommend`. `ethics` currently returns the README non-negotiables as placeholder rules until Task #18 replaces them.
+
 ---
 
 ## Responsible AI — non-negotiables
@@ -169,7 +196,13 @@ Use these metrics from day one — not just at the end. They're your GPS, not yo
 
 | Name | GitHub | What they worked on |
 |------|--------|---------------------|
-| | | |
+| Azizbek Olimov | [@azizbekolimov](https://github.com/azizbekolimov) | Shared dev environment (Task #1), real review corpus (Task #13), LLM agent wiring (Task #19) |
+| Frank Quintero | [@FrankQuintero](https://github.com/FrankQuintero) | Starter CSV audit (Task #2), co-leaser vs co-living guardrail (Task #7), recommender tuning and ablation (Task #15) |
+| Prisha Agarwal | [@prisha-agarwal](https://github.com/prisha-agarwal) | Census suppression handling (Task #3), MCP server (Task #16), team table (Task #11) |
+| Ayo | [@avisink](https://github.com/avisink) | Anchor ZIP EDA (Task #4), rec-engine eval harness (Task #8), live Census ACS pulls (Task #11), NLP theme extraction (Task #14) |
+| Shruti Timalsina | [@shrutimalsina](https://github.com/shrutimalsina) | Feature vector schema (Task #5), eval profile set (Task #9), fair-housing proxy review (Task #20), synthetic-option labeling (Task #21) |
+| Nikesh Paudyal | [@Natroness](https://github.com/Natroness) | Baseline recommender v0 (Task #6), rent index (Task #12), ethics tool (Task #18) |
+| Mourede Otchere | [@Mourede](https://github.com/Mourede) | September baseline scores (Task #10), tool JSON contracts (Task #17) |
 
 ---
 

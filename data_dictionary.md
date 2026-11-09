@@ -4,16 +4,22 @@
 
 **Real public aggregate data** for Miami-Dade ZIP codes (ZCTAs). Pulled from Census ACS, migration tables, and Zillow Research-style indices.
 
+**Source and vintage (Task #11).** The `B*` columns are the **2020-2024 ACS 5-year estimates** from `https://api.census.gov/data/2024/acs/acs5`, at ZIP Code Tabulation Area level, pulled on 2026-10-15 by `scripts/pull_census.py`. The starter file this replaced was the 2018-2022 ACS 5-year: `pull_census.py --year 2022` reproduces it byte for byte. The two Zillow columns were not refreshed and still come from the starter file.
+
+Five ZIPs in `miami_dade_zctas.txt` (33090, 33111, 33114, 33116, 33124) have no row: they are PO-box-only ZIPs with no ZCTA, so the Census publishes nothing for them.
+
+In this vintage, median home value (`B25077_001E`) is suppressed for Downtown (33128), one of the anchor ZIPs, and `clean_data.py` imputes it. It was measured ($292,400) in the 2018-2022 file.
+
 | Column | Type | Description |
 |--------|------|-------------|
 | NAME | string | Census ZCTA label |
 | B01003_001E | int | Total population (ACS) |
-| B25064_001E | int | Median gross rent (ACS); `-666666666` = missing/suppressed |
-| B25077_001E | int | Median home value (ACS) |
+| B25064_001E | int | Median gross rent (ACS); `-666666666` = missing/suppressed; `3501` is a top-code meaning "$3,500 or more", not a measurement (33149 and 33158 in this vintage) |
+| B25077_001E | int | Median home value (ACS); `2000001` is a top-code meaning "$2,000,000 or more", not a measurement |
 | B07003_001E | int | Total population 1 year and over (migration universe) |
 | B07003_004E | int | Same house 1 year ago |
-| B07003_008E | int | Moved within same county |
-| B07003_010E | int | Moved from different county |
+| B07003_008E | int | Moved within same county, **male only** (the Census label is "Total: Moved within same county: Male"; the total is `B07003_007E`, which this file does not include) |
+| B07003_010E | int | Moved from different county within same state |
 | B11016_001E | int | Total households |
 | B25003_002E | int | Owner-occupied units |
 | B25003_003E | int | Renter-occupied units |
@@ -43,7 +49,7 @@ Plain-text list of Miami-Dade ZIP codes used to scope the project.
 | pet_friendly | float 0-1 | Pet-friendly proxy |
 | walkable | float 0-1 | Walkability proxy |
 | migration_score | float 0-1 | In-migration activity proxy (derived) |
-| median_rent_usd | int | Rent index from public sources |
+| median_rent_usd | int | ACS median gross rent, copied from `miami_dade_public_features.csv` by `pull_census.py --sync-area-rent` |
 | co_living_friendly | float 0-1 | How suitable the ZIP is for co-living (only used when user selects co_living) |
 
 **Primary demo ZIPs:** Wynwood `33127`, Downtown `33128`, Brickell `33130`.
