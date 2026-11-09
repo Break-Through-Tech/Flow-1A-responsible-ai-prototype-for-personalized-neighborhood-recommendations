@@ -2,7 +2,7 @@
 
 household and housing_preference stay independent inputs. A co-leaser shares
 a private lease. Co-living is a housing type. Neither value is inferred from
-the other, including when both columns are read from the same data row.
+the other.
 
 All four combinations are valid:
 
@@ -10,8 +10,6 @@ All four combinations are valid:
 - alone + co_living
 - with_co_leaser + own_apartment
 - with_co_leaser + co_living
-
-A pair missing from the data is a coverage gap. It is still a valid input.
 """
 
 from __future__ import annotations
@@ -51,29 +49,3 @@ def validate_household_housing(
     if housing_preference not in VALID_HOUSING_PREFERENCES:
         raise ValueError(f"Unknown housing preference: {housing_preference}")
     return household, housing_preference
-
-
-def validate_household_housing_row(row: dict) -> tuple[str, str]:
-    """Read household and housing_preference from one data row.
-
-    The two columns are checked separately. The pair returned is the pair
-    that was stored. Nothing is filled in from the other column.
-    """
-    if "household" not in row or "housing_preference" not in row:
-        raise ValueError(
-            "Data row must include household and housing_preference as separate columns."
-        )
-    return validate_household_housing(row["household"], row["housing_preference"])
-
-
-def missing_combinations(rows: list[dict]) -> list[tuple[str, str]]:
-    """Return valid pairs that are absent from the data rows.
-
-    Missing does not mean forbidden. with_co_leaser + co_living stays valid
-    even when the data has no row for it.
-    """
-    present = {
-        validate_household_housing_row(row)
-        for row in rows
-    }
-    return [pair for pair in household_housing_combinations() if pair not in present]
