@@ -165,7 +165,7 @@ Use these metrics from day one — not just at the end. They're your GPS, not yo
 | LLM | Refusal rate | Not built yet (October) | | |
 | NLP | Theme coverage | Not built yet (Task #14, PR #45) | | |
 
-Baseline recorded for Task #10 from the Task #6 recommender, run on commit [`e28977f`](https://github.com/Break-Through-Tech/Flow-1A-responsible-ai-prototype-for-personalized-neighborhood-recommendations/commit/e28977f) of `main`. See [Baseline results](#baseline-results-task-10) for how to reproduce it and what the numbers mean.
+Baseline recorded for Task #10 from the Task #6 recommender, run on commit [`3f26cc0`](https://github.com/Break-Through-Tech/Flow-1A-responsible-ai-prototype-for-personalized-neighborhood-recommendations/commit/3f26cc0) of `main`. See [Baseline results](#baseline-results-task-10) for how to reproduce it and what the numbers mean.
 
 ---
 
@@ -228,7 +228,7 @@ Baseline recorded for Task #10 from the Task #6 recommender, run on commit [`e28
 
 Baseline recommender from Task #6: hard budget filter (ZIPs with suppressed rent excluded), then cosine similarity over `transit`, `social`, `quiet` (+ `co_living_friendly` for co-living). Scored on the 5 profiles in `eval/recommendation_profiles.json`, top 5 per profile.
 
-Numbers are from commit [`e28977f`](https://github.com/Break-Through-Tech/Flow-1A-responsible-ai-prototype-for-personalized-neighborhood-recommendations/commit/e28977f), which includes the live Census ACS data from Task #11. The commit is also stored under `run` in `eval/results/baseline_sep.json`. Reproduce from the repo root:
+Numbers are from commit [`3f26cc0`](https://github.com/Break-Through-Tech/Flow-1A-responsible-ai-prototype-for-personalized-neighborhood-recommendations/commit/3f26cc0), which includes the live Census ACS data from Task #11. The commit is also stored under `run` in `eval/results/baseline_sep.json`. Reproduce from the repo root:
 
 ```bash
 python eval/run_eval.py --json eval/results/baseline_sep.json   # Precision@k, cosine, budget pass rate

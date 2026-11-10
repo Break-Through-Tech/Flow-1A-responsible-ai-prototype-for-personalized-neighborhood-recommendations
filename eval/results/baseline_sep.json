@@ -1,6 +1,6 @@
 {
   "run": {
-    "commit": "e28977f",
+    "commit": "3f26cc0",
     "branch": "main",
     "command": "python eval/run_eval.py --json eval/results/baseline_sep.json"
   },
