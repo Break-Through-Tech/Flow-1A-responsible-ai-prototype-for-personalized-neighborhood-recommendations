@@ -71,14 +71,25 @@ Plain-text list of Miami-Dade ZIP codes used to scope the project.
 
 ## crowd_text_snippets.csv
 
-Demo snippets mimicking public review/forum text for NLP themes. Replace with real filtered corpora during model development.
+**Real review text (Task #13)** for the three anchor ZIPs (33127, 33128, 33130): 78 word-for-word excerpts of Google Maps reviews from [Google Local Data (2021)](https://mcauleylab.ucsd.edu/public_datasets/gdrive/googlelocal/), UCSD McAuley Lab. Only sentences about the area (transit, walking, noise, nightlife, pets) were kept, not sentences about one business or building. Reviewer names and IDs were removed, and sentences that describe an area as unsafe or by who lives there were left out. Curly quotes were changed to plain ones. Reviews date from 2013 to 2021.
+
+5 snippets come from reviews originally in another language. They use the English translation Google provided in the dataset, so they are the translation's words, not the reviewer's. Their `source` is `google_local_2021_translated` so they can be filtered out.
+
+How it was built: `scripts/build_crowd_text.py` filters the Florida review files to businesses in the three anchor ZIPs, then writes this CSV from `crowd_text_selection.json`, the list of hand-picked excerpts (each with the Google business ID it came from).
+
+- To change or remove a snippet, edit `crowd_text_selection.json` and run `python -m scripts.build_crowd_text build`. No download needed.
+- To check every excerpt against the original reviews, or to add more ZIPs, download the Florida files from the link above, run `filter`, then `build --check`. Steps are at the top of the script.
+
+Downtown (33128) is thin: the dataset has few reviews there that talk about the area, so it has 2 `social`, 2 `quiet` and no `pet_friendly` snippets. `crowd_themes('33128', 'pet_friendly')` returns `no_snippets`.
+
+Dataset citation: Li, Shang, McAuley, *UCTopic*, ACL 2022; Yan, He, Li, Zhang, McAuley, *Personalized Showcases*, SIGIR 2023.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| snippet_id | string | Row ID |
+| snippet_id | string | Stable ID set in `crowd_text_selection.json`; it does not change when other snippets are added or removed, and removed IDs are not reused |
 | zip | string | Associated ZIP |
-| source | string | e.g. kaggle_reviews (document real source when replaced) |
-| theme | string | transit, social, quiet, co_living, etc. |
+| source | string | `google_local_2021`, or `google_local_2021_translated` for Google-translated reviews (see above) |
+| theme | string | One of `transit`, `walkable`, `social`, `quiet`, `pet_friendly` |
 | text | string | Snippet text (aggregate use only) |
 
 ## Limitations
