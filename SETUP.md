@@ -150,6 +150,6 @@ Requires `scripts/recommender.py` from Task #6.
 
 ### Reading the precision numbers
 
-Two profiles list only 2 expected relevant ZIPs, so Precision@5 cannot exceed 0.40 for them. Across the current 5 profiles the ceilings are **P@3 = 0.867** and **P@5 = 0.520**, not 1.0. The harness prints the ceiling next to each score and the percentage achieved, so the baseline is not misread as a straight failure.
+The evaluation set now contains 20 profiles, including different budgets, household and housing preferences, and edge cases. Some profiles have fewer than 5 expected relevant ZIPs, so their Precision@5 ceiling is below 1.0. The harness prints the ceiling next to each score and the percentage achieved to help interpret the results.
 
 The diagnostics block also lists each unreachable expected ZIP with the reason, tags the user expressed that the schema does not score, and profiles with a single active feature. That last one matters: with one active feature, cosine ranks by how *concentrated* a ZIP is on that feature rather than how *high* it scores.
