@@ -1,5 +1,6 @@
 [
   {
+    "id": "G001",
     "zip": "33127",
     "theme": "transit",
     "gmap_id": "0x88d9b13380b81b3f:0x2009b1a12ee8264",
@@ -9,6 +10,7 @@
     ]
   },
   {
+    "id": "G002",
     "zip": "33127",
     "theme": "transit",
     "gmap_id": "0x88d9b14dfd9bdaa1:0xd7fc2f1907552607",
@@ -18,33 +20,37 @@
     ]
   },
   {
+    "id": "G079",
     "zip": "33127",
     "theme": "transit",
-    "gmap_id": "0x88d9b6b40ad98965:0x589fe89b95b65fcc",
-    "business": "Wynwood Brewing Company",
+    "gmap_id": "0x88d9b6b27c5fc0f7:0xd08ca0f3229d29b3",
+    "business": "Wynwood Walls",
     "excerpt": [
-      "It's also pretty easy to find share bikes or scooters around here in case you feel like exploring the area after."
+      "Miami’s free Trolley buses come there every 15 minutes adding extra convenience to art loving visitors."
     ]
   },
   {
+    "id": "G080",
     "zip": "33127",
     "theme": "transit",
-    "gmap_id": "0x88d9b7e021e3fbd3:0xdadc2e665c25b646",
-    "business": "Domio Wynwood",
+    "gmap_id": "0x88d9b6b2069e2a31:0x2d98120afe9bd936",
+    "business": "Wynwood Art Walk",
     "excerpt": [
-      "The area is a perfect base for exploring and catching uber to anywhere."
+      "Getting there by public transit is complicated."
     ]
   },
   {
+    "id": "G081",
     "zip": "33127",
     "theme": "transit",
-    "gmap_id": "0x88d9b6b238c42351:0x176f686e3db2f16e",
-    "business": "Le Chick Miami",
+    "gmap_id": "0x88d9b6ad60f3e7a9:0x5555cfb3959b3034",
+    "business": "R House Wynwood",
     "excerpt": [
-      "Because it's Wynwood, I would recommend Uber to save yourself the nightmare of finding parking."
+      "We enjoyed visiting the Art District. We rode around in the free trolley."
     ]
   },
   {
+    "id": "G006",
     "zip": "33127",
     "theme": "walkable",
     "gmap_id": "0x88d9b6ad53298fcf:0xa6c500c5ea00d57d",
@@ -54,6 +60,7 @@
     ]
   },
   {
+    "id": "G007",
     "zip": "33127",
     "theme": "walkable",
     "gmap_id": "0x88d9b6ad53298fcf:0xa6c500c5ea00d57d",
@@ -63,6 +70,7 @@
     ]
   },
   {
+    "id": "G008",
     "zip": "33127",
     "theme": "walkable",
     "gmap_id": "0x88d9b6cb0b395555:0x678f66ec7300b84e",
@@ -72,6 +80,7 @@
     ]
   },
   {
+    "id": "G009",
     "zip": "33127",
     "theme": "walkable",
     "gmap_id": "0x88d9b6adeb98d7d9:0x797bfce911c0cf0f",
@@ -81,6 +90,7 @@
     ]
   },
   {
+    "id": "G010",
     "zip": "33127",
     "theme": "walkable",
     "gmap_id": "0x88d9b151513ebf37:0x6e992144bd473bad",
@@ -90,6 +100,7 @@
     ]
   },
   {
+    "id": "G011",
     "zip": "33127",
     "theme": "walkable",
     "gmap_id": "0x88d9b7e021e3fbd3:0xdadc2e665c25b646",
@@ -99,6 +110,7 @@
     ]
   },
   {
+    "id": "G012",
     "zip": "33127",
     "theme": "social",
     "gmap_id": "0x88d9b6a89d40e9b3:0x1ce224637d9d0a3b",
@@ -108,6 +120,7 @@
     ]
   },
   {
+    "id": "G013",
     "zip": "33127",
     "theme": "social",
     "gmap_id": "0x88d9b151513ebf37:0x6e992144bd473bad",
@@ -117,6 +130,7 @@
     ]
   },
   {
+    "id": "G014",
     "zip": "33127",
     "theme": "social",
     "gmap_id": "0x88d9b151513ebf37:0x6e992144bd473bad",
@@ -126,6 +140,7 @@
     ]
   },
   {
+    "id": "G015",
     "zip": "33127",
     "theme": "social",
     "gmap_id": "0x88d9b707528314cb:0x4fe61f3a93cbf41d",
@@ -135,6 +150,7 @@
     ]
   },
   {
+    "id": "G016",
     "zip": "33127",
     "theme": "social",
     "gmap_id": "0x88d9b6adee2091ad:0x96c8a82bb0944c96",
@@ -144,6 +160,7 @@
     ]
   },
   {
+    "id": "G017",
     "zip": "33127",
     "theme": "social",
     "gmap_id": "0x88d9b74fbab4ff8b:0x9c85cdda1eeed577",
@@ -153,6 +170,7 @@
     ]
   },
   {
+    "id": "G018",
     "zip": "33127",
     "theme": "social",
     "gmap_id": "0x88d9b6b2ff964b7d:0x3aa0629ee61b2c23",
@@ -162,6 +180,7 @@
     ]
   },
   {
+    "id": "G019",
     "zip": "33127",
     "theme": "social",
     "gmap_id": "0x88d9b151513ebf37:0x6e992144bd473bad",
@@ -171,6 +190,7 @@
     ]
   },
   {
+    "id": "G020",
     "zip": "33127",
     "theme": "quiet",
     "gmap_id": "0x88d9b74fbab4ff8b:0x9c85cdda1eeed577",
@@ -180,6 +200,7 @@
     ]
   },
   {
+    "id": "G021",
     "zip": "33127",
     "theme": "quiet",
     "gmap_id": "0x88d9b6ad33621e2f:0xdbe2eefbe5d7e6da",
@@ -189,6 +210,7 @@
     ]
   },
   {
+    "id": "G022",
     "zip": "33127",
     "theme": "quiet",
     "gmap_id": "0x88d9b74fbab4ff8b:0x9c85cdda1eeed577",
@@ -198,6 +220,7 @@
     ]
   },
   {
+    "id": "G023",
     "zip": "33127",
     "theme": "quiet",
     "gmap_id": "0x88d9b74fbab4ff8b:0x9c85cdda1eeed577",
@@ -207,6 +230,7 @@
     ]
   },
   {
+    "id": "G024",
     "zip": "33127",
     "theme": "quiet",
     "gmap_id": "0x88d9b6ad53298fcf:0xa6c500c5ea00d57d",
@@ -216,6 +240,7 @@
     ]
   },
   {
+    "id": "G025",
     "zip": "33127",
     "theme": "quiet",
     "gmap_id": "0x88d9b74fbab4ff8b:0x9c85cdda1eeed577",
@@ -225,6 +250,7 @@
     ]
   },
   {
+    "id": "G026",
     "zip": "33127",
     "theme": "quiet",
     "gmap_id": "0x88d9b74fbab4ff8b:0x9c85cdda1eeed577",
@@ -234,6 +260,7 @@
     ]
   },
   {
+    "id": "G027",
     "zip": "33127",
     "theme": "quiet",
     "gmap_id": "0x88d9b74fbab4ff8b:0x9c85cdda1eeed577",
@@ -243,6 +270,7 @@
     ]
   },
   {
+    "id": "G028",
     "zip": "33127",
     "theme": "pet_friendly",
     "gmap_id": "0x88d9b15305484699:0x1372a8fabda62c7e",
@@ -252,6 +280,7 @@
     ]
   },
   {
+    "id": "G029",
     "zip": "33127",
     "theme": "pet_friendly",
     "gmap_id": "0x88d9b151513ebf37:0x6e992144bd473bad",
@@ -261,6 +290,7 @@
     ]
   },
   {
+    "id": "G030",
     "zip": "33127",
     "theme": "pet_friendly",
     "gmap_id": "0x88d9b1f38dff4dff:0x61443de98cd9c88c",
@@ -270,6 +300,7 @@
     ]
   },
   {
+    "id": "G031",
     "zip": "33127",
     "theme": "pet_friendly",
     "gmap_id": "0x88d9b151513ebf37:0x6e992144bd473bad",
@@ -279,6 +310,7 @@
     ]
   },
   {
+    "id": "G032",
     "zip": "33128",
     "theme": "transit",
     "gmap_id": "0x88d9b6999c30aa5f:0x897e6d4968c3ebfc",
@@ -289,6 +321,7 @@
     ]
   },
   {
+    "id": "G033",
     "zip": "33128",
     "theme": "transit",
     "gmap_id": "0x88d9b6999c30aa5f:0x897e6d4968c3ebfc",
@@ -298,6 +331,7 @@
     ]
   },
   {
+    "id": "G034",
     "zip": "33128",
     "theme": "transit",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -307,6 +341,7 @@
     ]
   },
   {
+    "id": "G035",
     "zip": "33128",
     "theme": "transit",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -316,6 +351,7 @@
     ]
   },
   {
+    "id": "G036",
     "zip": "33128",
     "theme": "transit",
     "gmap_id": "0x88d9b6999ec79f35:0x39427396b4a9ffa0",
@@ -325,6 +361,7 @@
     ]
   },
   {
+    "id": "G037",
     "zip": "33128",
     "theme": "transit",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -334,6 +371,7 @@
     ]
   },
   {
+    "id": "G038",
     "zip": "33128",
     "theme": "transit",
     "gmap_id": "0x88d9b6999ec79f35:0x39427396b4a9ffa0",
@@ -344,6 +382,7 @@
     "translated": true
   },
   {
+    "id": "G039",
     "zip": "33128",
     "theme": "walkable",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -353,6 +392,7 @@
     ]
   },
   {
+    "id": "G040",
     "zip": "33128",
     "theme": "walkable",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -362,6 +402,7 @@
     ]
   },
   {
+    "id": "G041",
     "zip": "33128",
     "theme": "walkable",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -371,6 +412,7 @@
     ]
   },
   {
+    "id": "G042",
     "zip": "33128",
     "theme": "walkable",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -380,6 +422,7 @@
     ]
   },
   {
+    "id": "G043",
     "zip": "33128",
     "theme": "walkable",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -389,6 +432,7 @@
     ]
   },
   {
+    "id": "G044",
     "zip": "33128",
     "theme": "walkable",
     "gmap_id": "0x88d9b13738aca96d:0xa1ae934332bf9aab",
@@ -399,6 +443,7 @@
     "translated": true
   },
   {
+    "id": "G045",
     "zip": "33128",
     "theme": "social",
     "gmap_id": "0x88d9b6974f1a4ec3:0xe68925c3bcb27207",
@@ -408,6 +453,7 @@
     ]
   },
   {
+    "id": "G046",
     "zip": "33128",
     "theme": "social",
     "gmap_id": "0x88d9b6eb54653ab1:0x95e1b0406662065c",
@@ -418,6 +464,7 @@
     "translated": true
   },
   {
+    "id": "G047",
     "zip": "33128",
     "theme": "quiet",
     "gmap_id": "0x88d9b697275be36f:0x6f3c7cc9b8faf64f",
@@ -427,6 +474,7 @@
     ]
   },
   {
+    "id": "G048",
     "zip": "33128",
     "theme": "quiet",
     "gmap_id": "0x88d9b69684dc99a3:0x99aff45c25fb9979",
@@ -436,6 +484,7 @@
     ]
   },
   {
+    "id": "G049",
     "zip": "33130",
     "theme": "transit",
     "gmap_id": "0x88d9b68684a28c07:0x4d7e43358c09635a",
@@ -446,6 +495,7 @@
     ]
   },
   {
+    "id": "G050",
     "zip": "33130",
     "theme": "transit",
     "gmap_id": "0x88d9b68414eb3e5f:0x7baf567fa56e54c7",
@@ -455,6 +505,7 @@
     ]
   },
   {
+    "id": "G051",
     "zip": "33130",
     "theme": "transit",
     "gmap_id": "0x88d9b68414eb3e5f:0x7baf567fa56e54c7",
@@ -464,6 +515,7 @@
     ]
   },
   {
+    "id": "G052",
     "zip": "33130",
     "theme": "transit",
     "gmap_id": "0x88d9b685ef31bf1d:0xed400a0544f67776",
@@ -473,6 +525,7 @@
     ]
   },
   {
+    "id": "G053",
     "zip": "33130",
     "theme": "transit",
     "gmap_id": "0x88d9b6848c981103:0x6ec8c75e4fdf12cc",
@@ -482,6 +535,7 @@
     ]
   },
   {
+    "id": "G054",
     "zip": "33130",
     "theme": "transit",
     "gmap_id": "0x88d9b68448640fa5:0x64e2ff299f54057a",
@@ -491,6 +545,7 @@
     ]
   },
   {
+    "id": "G055",
     "zip": "33130",
     "theme": "transit",
     "gmap_id": "0x88d9b68448640fa5:0x64e2ff299f54057a",
@@ -500,6 +555,7 @@
     ]
   },
   {
+    "id": "G056",
     "zip": "33130",
     "theme": "walkable",
     "gmap_id": "0x88d9b7457b878947:0xa538f5ece8a06a12",
@@ -509,6 +565,7 @@
     ]
   },
   {
+    "id": "G057",
     "zip": "33130",
     "theme": "walkable",
     "gmap_id": "0x88d9b79d462c68c5:0xdf8eb2b8132e668b",
@@ -518,6 +575,7 @@
     ]
   },
   {
+    "id": "G058",
     "zip": "33130",
     "theme": "walkable",
     "gmap_id": "0x88d9b685ff3d3267:0xd1245aaedfa12367",
@@ -527,6 +585,7 @@
     ]
   },
   {
+    "id": "G059",
     "zip": "33130",
     "theme": "walkable",
     "gmap_id": "0x88d9b7ed370d3d8f:0xa40e18237cade150",
@@ -536,6 +595,7 @@
     ]
   },
   {
+    "id": "G060",
     "zip": "33130",
     "theme": "walkable",
     "gmap_id": "0x88d9b6848c981103:0x6ec8c75e4fdf12cc",
@@ -545,6 +605,7 @@
     ]
   },
   {
+    "id": "G061",
     "zip": "33130",
     "theme": "walkable",
     "gmap_id": "0x88d9b6848c981103:0x6ec8c75e4fdf12cc",
@@ -554,6 +615,7 @@
     ]
   },
   {
+    "id": "G062",
     "zip": "33130",
     "theme": "walkable",
     "gmap_id": "0x88d9b68667a15045:0x916e0b0469a57e57",
@@ -563,6 +625,17 @@
     ]
   },
   {
+    "id": "G067",
+    "zip": "33130",
+    "theme": "walkable",
+    "gmap_id": "0x88d9b68667a15045:0x916e0b0469a57e57",
+    "business": "SOMA at Brickell Apartments",
+    "excerpt": [
+      "the neighborhood is amazing and everything is near by, including public transportation."
+    ]
+  },
+  {
+    "id": "G063",
     "zip": "33130",
     "theme": "social",
     "gmap_id": "0x88d9b7e4de32fc37:0x1943ec4850c71769",
@@ -572,6 +645,7 @@
     ]
   },
   {
+    "id": "G064",
     "zip": "33130",
     "theme": "social",
     "gmap_id": "0x88d9b686c8f0e903:0x892b2d6cb0822b51",
@@ -581,6 +655,7 @@
     ]
   },
   {
+    "id": "G065",
     "zip": "33130",
     "theme": "social",
     "gmap_id": "0x88d9b7457b878947:0xa538f5ece8a06a12",
@@ -590,6 +665,7 @@
     ]
   },
   {
+    "id": "G066",
     "zip": "33130",
     "theme": "social",
     "gmap_id": "0x88d9b79d462c68c5:0xdf8eb2b8132e668b",
@@ -599,15 +675,7 @@
     ]
   },
   {
-    "zip": "33130",
-    "theme": "social",
-    "gmap_id": "0x88d9b68667a15045:0x916e0b0469a57e57",
-    "business": "SOMA at Brickell Apartments",
-    "excerpt": [
-      "the neighborhood is amazing and everything is near by, including public transportation."
-    ]
-  },
-  {
+    "id": "G068",
     "zip": "33130",
     "theme": "quiet",
     "gmap_id": "0x88d9b68414eb3e5f:0x7baf567fa56e54c7",
@@ -617,6 +685,7 @@
     ]
   },
   {
+    "id": "G069",
     "zip": "33130",
     "theme": "quiet",
     "gmap_id": "0x88d9b68440af65cf:0xe7e613a95192a820",
@@ -626,6 +695,7 @@
     ]
   },
   {
+    "id": "G070",
     "zip": "33130",
     "theme": "quiet",
     "gmap_id": "0x88d9b685ff3d3267:0xd1245aaedfa12367",
@@ -635,6 +705,7 @@
     ]
   },
   {
+    "id": "G071",
     "zip": "33130",
     "theme": "quiet",
     "gmap_id": "0x88d9b68667a15045:0x916e0b0469a57e57",
@@ -644,6 +715,7 @@
     ]
   },
   {
+    "id": "G072",
     "zip": "33130",
     "theme": "quiet",
     "gmap_id": "0x88d9b7ed370d3d8f:0xa40e18237cade150",
@@ -653,6 +725,7 @@
     ]
   },
   {
+    "id": "G073",
     "zip": "33130",
     "theme": "quiet",
     "gmap_id": "0x88d9b7ed370d3d8f:0xa40e18237cade150",
@@ -662,6 +735,7 @@
     ]
   },
   {
+    "id": "G074",
     "zip": "33130",
     "theme": "quiet",
     "gmap_id": "0x88d9b68667a15045:0x916e0b0469a57e57",
@@ -671,6 +745,7 @@
     ]
   },
   {
+    "id": "G075",
     "zip": "33130",
     "theme": "pet_friendly",
     "gmap_id": "0x88d9b6867f201a49:0x4401800cddf99fe4",
@@ -680,6 +755,7 @@
     ]
   },
   {
+    "id": "G076",
     "zip": "33130",
     "theme": "pet_friendly",
     "gmap_id": "0x88d9b68440af65cf:0x6468fa9969d230cb",
@@ -689,6 +765,7 @@
     ]
   },
   {
+    "id": "G077",
     "zip": "33130",
     "theme": "pet_friendly",
     "gmap_id": "0x88d9b7ed370d3d8f:0xa40e18237cade150",
@@ -699,6 +776,7 @@
     "translated": true
   },
   {
+    "id": "G078",
     "zip": "33130",
     "theme": "pet_friendly",
     "gmap_id": "0x88d9b6903b0a922b:0x4f48384ca808d23b",

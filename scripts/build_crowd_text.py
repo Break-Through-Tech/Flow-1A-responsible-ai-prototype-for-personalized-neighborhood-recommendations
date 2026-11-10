@@ -26,6 +26,9 @@ Three steps, run from the repo root:
    excerpts. With --check, every excerpt is first confirmed to appear word for
    word in a review of the same business and ZIP. Excerpts marked
    "translated": true get the source google_local_2021_translated.
+   Each excerpt keeps its own "id" (G001, G002, ...), so removing one does
+   not renumber the others. Give a new excerpt the next unused number and
+   never reuse a removed one.
 
     python -m scripts.build_crowd_text build --check reviews.csv more_reviews.csv
 
@@ -170,6 +173,8 @@ def cmd_candidates(args) -> None:
 def _problems(item: dict) -> list[str]:
     text = " ".join(item["excerpt"])
     out = []
+    if not re.fullmatch(r"G\d{3}", str(item.get("id", ""))):
+        out.append("id must look like G001")
     if not re.fullmatch(r"\d{5}", item["zip"]):
         out.append("ZIP must be 5 digits")
     if item["theme"] not in THEMES:
@@ -187,6 +192,8 @@ def cmd_build(args) -> None:
     errors = []
     for n, item in enumerate(selection, 1):
         errors += [f"item {n} ({item['gmap_id']}): {p}" for p in _problems(item)]
+    ids = [item.get("id") for item in selection]
+    errors += [f"id {i} is used more than once" for i in sorted({i for i in ids if ids.count(i) > 1})]
 
     if args.check:
         by_business: dict[tuple, list[tuple[str, bool]]] = {}
@@ -207,13 +214,13 @@ def cmd_build(args) -> None:
         sys.exit(f"{len(errors)} problem(s); CSV not written")
 
     order = {t: i for i, t in enumerate(THEMES)}
-    selection.sort(key=lambda s: (s["zip"], order[s["theme"]]))
+    selection.sort(key=lambda s: (s["zip"], order[s["theme"]], s["id"]))
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["snippet_id", "zip", "source", "theme", "text"])
-        for k, item in enumerate(selection, 1):
+        for item in selection:
             source = SOURCE + ("_translated" if item.get("translated") else "")
-            w.writerow([f"G{k:03d}", item["zip"], source, item["theme"], " ".join(item["excerpt"]).translate(_QUOTES)])
+            w.writerow([item["id"], item["zip"], source, item["theme"], " ".join(item["excerpt"]).translate(_QUOTES)])
     print(f"wrote {len(selection)} snippets to {args.out}" + (" (all excerpts verified)" if args.check else ""))
 
 

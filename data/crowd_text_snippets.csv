@@ -1,9 +1,9 @@
 snippet_id,zip,source,theme,text
 G001,33127,google_local_2021,transit,"It's not the station so much as the trains delayed going south ALL THE TIME, I'm quitting going to metrorail altogether for another forms of transportation"
 G002,33127,google_local_2021,transit,"I found this riding Miami Tollies. Transfer from ""Little Haiti"" To ""Wynwood"" Trolley"
-G003,33127,google_local_2021,transit,It's also pretty easy to find share bikes or scooters around here in case you feel like exploring the area after.
-G004,33127,google_local_2021,transit,The area is a perfect base for exploring and catching uber to anywhere.
-G005,33127,google_local_2021,transit,"Because it's Wynwood, I would recommend Uber to save yourself the nightmare of finding parking."
+G079,33127,google_local_2021,transit,Miami's free Trolley buses come there every 15 minutes adding extra convenience to art loving visitors.
+G080,33127,google_local_2021,transit,Getting there by public transit is complicated.
+G081,33127,google_local_2021,transit,We enjoyed visiting the Art District. We rode around in the free trolley.
 G006,33127,google_local_2021,walkable,"it was so many cool places in walking distance, the art walls of Krymwood, great places to eat and at night certain locations turn into awesome night spots for dancing etc"
 G007,33127,google_local_2021,walkable,"It's near all the nice cool wynwood hot spots, which is really convenient as you can walk to any of these cool locations."
 G008,33127,google_local_2021,walkable,The place isn't super walkable but only 15 min from south beach and downtown and about 5 from Wynwood which is very walkable.
@@ -61,11 +61,11 @@ G059,33130,google_local_2021,walkable,even though it's only a block away from Ma
 G060,33130,google_local_2021,walkable,"everything you need is close by, you don't need a car unless you have to go to work."
 G061,33130,google_local_2021,walkable,"you are in the heart of Brickell. Restaurants and shops all around you, all within walking distance."
 G062,33130,google_local_2021,walkable,"Shopping, dining and entertainment all within walking distance."
+G067,33130,google_local_2021,walkable,"the neighborhood is amazing and everything is near by, including public transportation."
 G063,33130,google_local_2021,social,a short walk to the Little Havana neighborhood bars and restaurants.
 G064,33130,google_local_2021,social,Upscale living and dining right off brickell close to great night life and brickell center
 G065,33130,google_local_2021,social,"With the Underline Park finally finished just across the street and old motels on 7th Street being replaced with new towers, the neighborhood keeps improving."
 G066,33130,google_local_2021,social,"We are beginning to look, feel and operate like a true connected ""community"""
-G067,33130,google_local_2021,social,"the neighborhood is amazing and everything is near by, including public transportation."
 G068,33130,google_local_2021,quiet,"It is a busy area but the buildings are in good conditions, so I basically can't hear any noise when I need some quiet time."
 G069,33130,google_local_2021,quiet,"Very noise, construction everywhere, cars and motorcycle extremely noise. I dont recomend at this time, maybe in a year or two when the construction slow down."
 G070,33130,google_local_2021,quiet,"the location is a big hit for us, especially because this area is not noise"

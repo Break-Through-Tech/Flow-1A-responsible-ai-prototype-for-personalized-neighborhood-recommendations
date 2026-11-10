@@ -86,7 +86,7 @@ Dataset citation: Li, Shang, McAuley, *UCTopic*, ACL 2022; Yan, He, Li, Zhang, M
 
 | Column | Type | Description |
 |--------|------|-------------|
-| snippet_id | string | Row ID |
+| snippet_id | string | Stable ID set in `crowd_text_selection.json`; it does not change when other snippets are added or removed, and removed IDs are not reused |
 | zip | string | Associated ZIP |
 | source | string | `google_local_2021`, or `google_local_2021_translated` for Google-translated reviews (see above) |
 | theme | string | One of `transit`, `walkable`, `social`, `quiet`, `pet_friendly` |
