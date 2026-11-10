@@ -7,7 +7,8 @@ Metric definitions follow EVAL_FRAMEWORK.md exactly:
     Budget filter pass rate % of profiles where every returned ZIP is within budget
 
 Budget pass rate is a correctness check, not a score: anything below 100% is a
-bug and this script exits non-zero.
+bug and this script exits non-zero. So does a profile whose expected ZIPs the
+engine can never return, since that profile is out of date with the data.
 
 Run from the repo root:
 
@@ -88,14 +89,13 @@ def load_profiles(path: Path) -> list[dict]:
     return cleaned
 
 
-def load_reference(area_path: Path, public_path: Path) -> pd.DataFrame:
+def load_reference(area_path: Path,public_path: Path,snapshot_path: Path | None = None) -> pd.DataFrame:
     """Independently calculate the lower usable ACS/Zillow estimate."""
     area = pd.read_csv(area_path, dtype={ID_COLUMN: str})
     snapshot = pd.read_csv(
-        _ROOT / "data" / "zillow_rent_snapshot.csv",
+        snapshot_path or _ROOT / "data" / "zillow_rent_snapshot.csv",
         dtype={"zip": str},
     )
-
     joined = area.merge(
         snapshot[["zip", "zori_rent_usd"]],
         on="zip",
@@ -145,21 +145,51 @@ def load_reference(area_path: Path, public_path: Path) -> pd.DataFrame:
 def precision_at_k(returned: list[str], relevant: set[str], k: int) -> float:
     return len([z for z in returned[:k] if z in relevant]) / k
 
+def _usd(x: float) -> str:
+    return f"${x:,.0f}" if float(x).is_integer() else f"${x:,.2f}"
+
+
+def unreachable_reason(zip_code: str, budget: float, ref: pd.DataFrame) -> str | None:
+    """Explain eligibility using the lower usable ACS/Zillow rent estimate.
+
+    A ZIP is unreachable if it is absent, neither source provides a usable
+    estimate, or the lower usable estimate exceeds the budget.
+    """
+    if zip_code not in ref.index:
+        return "not in the data (typo?)"
+
+    rent = float(ref.at[zip_code, "rent"])
+    if (
+        bool(ref.at[zip_code, "rent_unavailable"])
+        or not math.isfinite(rent)
+        or rent <= 0
+    ):
+        return "no usable ACS or Zillow rent estimate"
+
+    if rent > budget:
+        return f"lower rent estimate {_usd(rent)} is over the {_usd(budget)} budget"
+
+    return None
+
 
 def is_reachable(zip_code: str, budget: float, ref: pd.DataFrame) -> bool:
-    """Whether a ZIP has valid Zillow rent within budget."""
-    if zip_code not in ref.index:
-        return False
-    if bool(ref.at[zip_code, "rent_unavailable"]):
-        return False
-    return bool(ref.at[zip_code, "rent"] <= budget)
+    """Whether the engine could return this ZIP at all."""
+    return unreachable_reason(zip_code, budget, ref) is None
 
 
-def reachable_relevant(profile: dict, ref: pd.DataFrame) -> list[str]:
-    return [
-        z for z in profile["expected_relevant_zips"]
-        if is_reachable(z, profile["budget_max"], ref)
-    ]
+def unreachable_relevant(profile: dict, ref: pd.DataFrame) -> list[dict]:
+    """Expected ZIPs the engine can never return: a stale or mistaken profile, not a ranking miss.
+
+    These usually appear after a data refresh moves rents past a budget that
+    was set by hand, so they fail the run rather than quietly lowering the
+    precision ceiling.
+    """
+    out = []
+    for z in profile["expected_relevant_zips"]:
+        reason = unreachable_reason(z, profile["budget_max"], ref)
+        if reason:
+            out.append({"zip": z, "reason": reason})
+    return out
 
 
 def unscored_tags(profile: dict) -> list[str]:
@@ -173,12 +203,14 @@ def evaluate_profile(profile: dict, ref: pd.DataFrame, top_k: int, data_path: Pa
     relevant = set(profile["expected_relevant_zips"])
     not_relevant = set(profile["not_relevant_zips"])
     budget = profile["budget_max"]
+    unreachable = unreachable_relevant(profile, ref)
 
     row = {
         "profile_id": profile["profile_id"],
         "budget_max": budget,
         "n_relevant": len(relevant),
-        "n_reachable_relevant": len(reachable_relevant(profile, ref)),
+        "n_reachable_relevant": len(relevant) - len(unreachable),
+        "unreachable_relevant": unreachable,
         "unknown_relevant": [z for z in profile["expected_relevant_zips"] if z not in ref.index],
         "unscored_tags": unscored_tags(profile),
         "status": "ok",
@@ -263,6 +295,7 @@ def summarize(rows: list[dict], top_k: int) -> dict:
         "mean_cosine": statistics.fmean(pooled) if pooled else None,
         "budget_filter_pass_rate": None,
         "budget_profiles_passing": 0,
+        "profiles_with_unreachable_expected": [r["profile_id"] for r in rows if r["unreachable_relevant"]],
     }
     for k in PRECISION_KS:
         vals = [r["precision"][k] for r in scored]
@@ -315,6 +348,10 @@ def render(rows: list[dict], summary: dict, top_k: int) -> None:
           f"({summary['budget_profiles_passing']}/{summary['profiles_total']} profiles)  [{verdict}]")
     if summary["profiles_errored"]:
         print(f"  {summary['profiles_errored']} profile(s) errored and count as not passing")
+    stale = summary["profiles_with_unreachable_expected"]
+    if stale:
+        print(f"  {len(stale)} profile(s) expect ZIPs the engine can never return: "
+              f"{', '.join(stale)}  [STALE PROFILE]")
 
     print("\n--- diagnostics ---")
     any_note = False
@@ -331,16 +368,12 @@ def render(rows: list[dict], summary: dict, top_k: int) -> None:
             notes.append(
                 f"only {len(r['returned_zips'])} ZIPs are within budget, fewer than top_k={top_k}"
             )
-        if r["unknown_relevant"]:
-            notes.append(f"expected ZIPs not in the data (typo?): {r['unknown_relevant']}")
+        for u in r["unreachable_relevant"]:
+            notes.append(f"EXPECTED ZIP UNREACHABLE: {u['zip']}: {u['reason']}")
         if r["budget_violations"]:
             notes.append(f"BUDGET VIOLATION: {r['budget_violations']}")
         if r["rent_echo_mismatches"]:
             notes.append(f"rent echo disagrees with CSV: {r['rent_echo_mismatches']}")
-        if r["n_reachable_relevant"] < r["n_relevant"]:
-            notes.append(
-                f"only {r['n_reachable_relevant']}/{r['n_relevant']} relevant ZIPs are reachable"
-            )
         if r["n_relevant"] < max(PRECISION_KS):
             notes.append(f"{r['n_relevant']} relevant ZIPs caps P@5 at {min(r['n_relevant'],5)/5:.2f}")
         if r["unscored_tags"]:
@@ -403,11 +436,20 @@ def main() -> int:
             return 2
         print(f"\nwrote {args.json}")
 
+    failures = []
     if has_budget_violation(rows):
-        print("\nFAILED: budget filter pass rate is below 100%, which is a bug rather than a metric.")
-        return 1
+        failures.append("budget filter pass rate is below 100%, which is a bug rather than a metric.")
     if summary["profiles_errored"]:
-        print(f"\nFAILED: {summary['profiles_errored']} profile(s) errored, so the run is incomplete.")
+        failures.append(f"{summary['profiles_errored']} profile(s) errored, so the run is incomplete.")
+    if stale := summary["profiles_with_unreachable_expected"]:
+        failures.append(
+            f"{len(stale)} profile(s) expect ZIPs the engine can never return, usually because "
+            "rents changed since the budget was set. Update the budget or the expected ZIPs."
+        )
+    if failures:
+        print()
+        for f in failures:
+            print(f"FAILED: {f}")
         return 1
     return 0
 

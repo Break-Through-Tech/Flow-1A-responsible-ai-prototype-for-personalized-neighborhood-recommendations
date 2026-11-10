@@ -186,7 +186,8 @@ def test_every_profile_errored_still_renders():
 def test_unknown_expected_zip_is_flagged():
     rows, _, text = _run(_profile(budget_max=3500,expected_relevant_zips=["33130", "99999"],))
     assert rows[0]["unknown_relevant"] == ["99999"] and rows[0]["n_reachable_relevant"] == 1
-    assert "not in the data" in text
+    assert rows[0]["unreachable_relevant"] == [{"zip": "99999", "reason": "not in the data (typo?)"}]
+    assert "EXPECTED ZIP UNREACHABLE: 99999: not in the data" in text
 
 
 def test_unavailable_rent_zip_is_unreachable():
@@ -195,12 +196,37 @@ def test_unavailable_rent_zip_is_unreachable():
     assert len(suppressed) > 0
     assert not any(h.is_reachable(z, 10**9, ref) for z in suppressed)
     assert not h.is_reachable("99999", 10**9, ref)
+    rows, _, _ = _run(_profile(expected_relevant_zips=["33130", suppressed[0]]))
+    assert [u["zip"] for u in rows[0]["unreachable_relevant"]] == [suppressed[0]]
+    assert "no usable ACS or Zillow rent estimate" in rows[0]["unreachable_relevant"][0]["reason"]
+
+
+def test_expected_zip_over_budget_is_a_stale_profile():
+    rent = float(_ref().at["33130", "rent"])
+    rows, summary, text = _run(_profile(budget_max=rent - 1), _profile(profile_id="T2", budget_max=rent))
+    stale, fresh = rows
+    assert [u["zip"] for u in stale["unreachable_relevant"]] == ["33130"]
+    assert "over the" in stale["unreachable_relevant"][0]["reason"]
+    assert stale["n_reachable_relevant"] == stale["n_relevant"] - 1
+    assert "33130" not in [u["zip"] for u in fresh["unreachable_relevant"]]
+    assert summary["profiles_with_unreachable_expected"] == ["T1"]
+    assert "[STALE PROFILE]" in text and "EXPECTED ZIP UNREACHABLE: 33130" in text
+    assert stale["budget_pass"] is True   # a stale profile is not a budget bug
+
+
+def test_stale_profile_fails_the_run():
+    rent = float(_ref().at["33130", "rent"])
+    res = _cli("--profiles", str(_write([_profile(budget_max=rent - 1)])))
+    assert res.returncode == 1, res.stdout
+    assert "FAILED:" in res.stdout and "can never return" in res.stdout
+    assert _cli("--profiles", str(_write([_profile(budget_max=rent)]))).returncode == 0
 
 
 def test_cli_exit_codes():
     assert _cli().returncode == 0
     assert _cli("--top-k", "3").returncode == 2
-    assert _cli("--profiles", str(_write([_profile(budget_max=1)]))).returncode == 0
+    assert _cli("--profiles", str(_write([_profile(budget_max=1, expected_relevant_zips=[])]))).returncode == 0
+    assert _cli("--profiles", str(_write([_profile(budget_max=1)]))).returncode == 1
     assert _cli("--profiles", str(_write([_profile(household="nobody")]))).returncode == 1
 
     for bad in (_write("{not json"), _write([_profile(budget_max=...)]), Path("no_such_file.json")):
@@ -295,6 +321,61 @@ def test_range_recommendations_include_provenance():
             else "within_reference_range"
         )
         assert row["budget_position"] == expected
+
+def test_fixture_rent_bounds_match_explicit_expected_values():
+    from scripts.recommender import load_area_features
+    import pandas as pd
+
+    with tempfile.TemporaryDirectory() as directory:
+        folder = Path(directory)
+        area_path = folder / "areas.csv"
+        snapshot_path = folder / "zillow.csv"
+
+        zips = ["90000", "90001", "90002", "90003", "90004", "90005"]
+        pd.DataFrame({
+            "zip": zips,
+            "area_name": zips,
+            "transit": 0.8,
+            "social": 0.4,
+            "quiet": 0.5,
+            "co_living_friendly": 0.6,
+            "median_rent_usd": [1200, 2400, 1300, 1500, 3501, 3501],
+            "median_rent_usd_suppressed": [False, False, False, True, False, False],
+        }).to_csv(area_path, index=False)
+
+        pd.DataFrame({
+            "zip": ["90000", "90001", "90003", "90004"],
+            "zori_rent_usd": [2000, 1800, 2100, 4000],
+            "rent_source": "ZORI",
+            "rent_as_of": "2026-09-30",
+            "rent_units": "USD/month",
+        }).to_csv(snapshot_path, index=False)
+
+        areas = load_area_features(area_path, snapshot_path=snapshot_path).set_index("zip")
+        ref = h.load_reference(
+            area_path, folder / "unused_public.csv", snapshot_path=snapshot_path
+        )
+
+        expected = {
+            "90000": (1200, 2000),  # both sources
+            "90001": (1800, 2400),  # Zillow is lower
+            "90002": (1300, 1300),  # ACS only
+            "90003": (2100, 2100),  # suppressed ACS, Zillow only
+            "90004": (4000, 4000),  # top-coded ACS, Zillow only
+        }
+        for zip_code, (lower, upper) in expected.items():
+            assert areas.at[zip_code, "rent_lower_usd"] == lower, zip_code
+            assert areas.at[zip_code, "rent_upper_usd"] == upper, zip_code
+            assert ref.at[zip_code, "rent"] == lower, zip_code
+            assert ref.at[zip_code, "rent_upper"] == upper, zip_code
+            assert not ref.at[zip_code, "rent_unavailable"], zip_code
+
+        # Top-coded ACS with no Zillow row means neither source is usable.
+        assert pd.isna(areas.at["90005", "rent_lower_usd"])
+        assert pd.isna(areas.at["90005", "rent_upper_usd"])
+        assert pd.isna(ref.at["90005", "rent"])
+        assert pd.isna(ref.at["90005", "rent_upper"])
+        assert ref.at["90005", "rent_unavailable"]
 
 if __name__ == "__main__":
     tests = [

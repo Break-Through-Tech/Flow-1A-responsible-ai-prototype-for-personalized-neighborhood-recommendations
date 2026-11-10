@@ -1,6 +1,7 @@
 import math
 import sys
 from pathlib import Path
+import json
 
 import numpy as np
 import pandas as pd
@@ -58,18 +59,21 @@ def add_rent_bounds(df: pd.DataFrame) -> pd.DataFrame:
     )
     return df
 
-def load_area_features(path: str | Path | None = None) -> pd.DataFrame:
+
+def load_area_features(path: str | Path | None = None,snapshot_path: str | Path | None = None) -> pd.DataFrame:
     """Load area features and attach the dated Zillow rent snapshot."""
-    df = pd.read_csv(path or _DATA_PATH, dtype={ID_COLUMN: str})
+    area_path = Path(path or _DATA_PATH)
+    df = pd.read_csv(area_path, dtype={ID_COLUMN: str})
     validate_feature_schema(df)
 
-    snapshot_path = _ROOT / "data" / "zillow_rent_snapshot.csv"
+    snapshot_path = snapshot_path = snapshot_path or _ROOT / "data" / "zillow_rent_snapshot.csv"
     snapshot = pd.read_csv(snapshot_path, dtype={"zip": str})
 
     required = {
         "zip", "zori_rent_usd", "rent_as_of",
         "rent_source", "rent_units",
     }
+
     missing = required - set(snapshot.columns)
     if missing:
         raise ValueError(f"Rent snapshot missing columns: {sorted(missing)}")
@@ -87,6 +91,10 @@ def load_area_features(path: str | Path | None = None) -> pd.DataFrame:
         how="left",
         validate="one_to_one",
     )
+
+    metadata_path = area_path.with_suffix(".metadata.json")
+    metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
+    joined["acs_period"] = metadata.get("acs", {}).get("period")
     return add_rent_bounds(joined)
 
 
@@ -217,6 +225,23 @@ def cosine_similarities(user_vector: np.ndarray, area_matrix: np.ndarray) -> np.
     scores[nonzero] = dots[nonzero] / (norms[nonzero] * user_norm)  # cosine = dot / (lengths)
     return scores  # similarity for each ZIP
 
+def rent_sources(row: pd.Series) -> dict:
+    """Describe only the sources that contributed a usable estimate."""
+    sources = {}
+
+    if pd.notna(row["acs_rent_estimate_usd"]):
+        sources["acs"] = {"source": "Census ACS B25064_001E"}
+        if pd.notna(row.get("acs_period")):
+            sources["acs"]["period"] = str(row["acs_period"])
+
+    if pd.notna(row["zori_rent_usd"]):
+        sources["zori"] = {}
+        for field, column in (("source", "rent_source"), ("as_of", "rent_as_of")):
+            value = row.get(column)
+            if pd.notna(value) and str(value).strip():
+                sources["zori"][field] = str(value)
+
+    return sources
 
 def rank_areas(
     candidates: pd.DataFrame,
@@ -259,16 +284,7 @@ def rank_areas(
                 ),
                 "rent_basis": str(row["rent_basis"]),
                 "budget_position": str(row["budget_position"]),
-                "rent_sources": {
-                    "acs": {
-                        "source": "Census ACS B25064_001E",
-                        "period": "2020-2024",
-                    },
-                    "zori": {
-                        "source": str(row["rent_source"]),
-                        "as_of": str(row["rent_as_of"]),
-                    },
-                },
+                "rent_sources": rent_sources(row),
                 "rent_units": "USD/month",
                 "rent_disclaimer": (
                     "Reference estimates, not guaranteed market rent bounds "
