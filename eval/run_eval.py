@@ -16,7 +16,7 @@ Run from the repo root:
     python eval/run_eval.py --json eval/results/baseline_sep.json
 """
 from __future__ import annotations
-
+import math
 import argparse
 import json
 import statistics
@@ -29,7 +29,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.feature_schema import BUDGET_COLUMN, ID_COLUMN, TAG_TO_COLUMN
+from scripts.feature_schema import ID_COLUMN, TAG_TO_COLUMN
 from scripts.recommender import recommend
 
 PROFILES_PATH = _ROOT / "eval" / "recommendation_profiles.json"
@@ -89,47 +89,86 @@ def load_profiles(path: Path) -> list[dict]:
     return cleaned
 
 
-def load_reference(area_path: Path, public_path: Path) -> pd.DataFrame:
-    """Rent, population and the suppression flag per ZIP, read independently of the recommender."""
+def load_reference(area_path: Path,public_path: Path,snapshot_path: Path | None = None) -> pd.DataFrame:
+    """Independently calculate the lower usable ACS/Zillow estimate."""
     area = pd.read_csv(area_path, dtype={ID_COLUMN: str})
-    absent = [c for c in (ID_COLUMN, BUDGET_COLUMN) if c not in area.columns]
-    if absent:
-        raise ValueError(f"{area_path} is missing columns {absent}")
-    area = area.set_index(ID_COLUMN)
-    ref = pd.DataFrame(index=area.index)
-    ref["rent"] = area[BUDGET_COLUMN]
-    flag = f"{BUDGET_COLUMN}_suppressed"
-    ref["rent_imputed"] = area[flag].astype(bool) if flag in area.columns else False
+    snapshot = pd.read_csv(
+        snapshot_path or _ROOT / "data" / "zillow_rent_snapshot.csv",
+        dtype={"zip": str},
+    )
+    joined = area.merge(
+        snapshot[["zip", "zori_rent_usd"]],
+        on="zip",
+        how="left",
+        validate="one_to_one",
+    ).set_index(ID_COLUMN)
+
+    acs = pd.to_numeric(joined["median_rent_usd"], errors="raise")
+    zori = pd.to_numeric(joined["zori_rent_usd"], errors="raise")
+
+    acs_valid = (
+        acs.notna()
+        & acs.map(math.isfinite)
+        & acs.gt(0)
+        & acs.ne(3501)
+    )
+    for flag in ("median_rent_usd_suppressed", "median_rent_usd_missing"):
+        if flag in joined:
+            acs_valid &= ~joined[flag].fillna(True).astype(bool)
+
+    zori_valid = (
+        zori.notna()
+        & zori.map(math.isfinite)
+        & zori.gt(0)
+    )
+
+    estimates = pd.DataFrame({
+        "acs": acs.where(acs_valid),
+        "zori": zori.where(zori_valid),
+    })
+
+    ref = pd.DataFrame(index=joined.index)
+    ref["rent"] = estimates.min(axis=1)
+    ref["rent_upper"] = estimates.max(axis=1)
+    ref["rent_unavailable"] = ref["rent"].isna()
+
     if public_path.exists():
-        pop = pd.read_csv(public_path, dtype={ID_COLUMN: str}).set_index(ID_COLUMN)["population"]
+        pop = pd.read_csv(
+            public_path, dtype={ID_COLUMN: str}
+        ).set_index(ID_COLUMN)["population"]
         ref["population"] = pop.reindex(ref.index)
     else:
         ref["population"] = pd.NA
-    return ref
 
+    return ref
 
 def precision_at_k(returned: list[str], relevant: set[str], k: int) -> float:
     return len([z for z in returned[:k] if z in relevant]) / k
-
 
 def _usd(x: float) -> str:
     return f"${x:,.0f}" if float(x).is_integer() else f"${x:,.2f}"
 
 
 def unreachable_reason(zip_code: str, budget: float, ref: pd.DataFrame) -> str | None:
-    """Why the engine could never return this ZIP, or None if it could.
+    """Explain eligibility using the lower usable ACS/Zillow rent estimate.
 
-    Mirrors the engine's budget filter. The engine drops ZIPs whose rent was
-    imputed rather than measured, so a ZIP with a suppressed rent is
-    unreachable even when the imputed value fits.
+    A ZIP is unreachable if it is absent, neither source provides a usable
+    estimate, or the lower usable estimate exceeds the budget.
     """
     if zip_code not in ref.index:
         return "not in the data (typo?)"
-    if bool(ref.at[zip_code, "rent_imputed"]):
-        return "rent is suppressed, so the engine never returns it"
+
     rent = float(ref.at[zip_code, "rent"])
+    if (
+        bool(ref.at[zip_code, "rent_unavailable"])
+        or not math.isfinite(rent)
+        or rent <= 0
+    ):
+        return "no usable ACS or Zillow rent estimate"
+
     if rent > budget:
-        return f"rent {_usd(rent)} is over the {_usd(budget)} budget"
+        return f"lower rent estimate {_usd(rent)} is over the {_usd(budget)} budget"
+
     return None
 
 
@@ -185,7 +224,7 @@ def evaluate_profile(profile: dict, ref: pd.DataFrame, top_k: int, data_path: Pa
         "rent_echo_mismatches": [],
         "false_positives": [],
         "unreachable_negatives": [],
-        "recommended_with_imputed_rent": [],
+        "recommended_with_unavailable_rent": [],
         "recommended_zero_population": [],
     }
 
@@ -218,14 +257,19 @@ def evaluate_profile(profile: dict, ref: pd.DataFrame, top_k: int, data_path: Pa
         true_rent = float(ref.at[z, "rent"]) if z in ref.index else None
         if true_rent is None:
             row["budget_violations"].append({"zip": z, "rent": None, "reason": "zip not in reference data"})
-        elif true_rent > budget:
+        elif (
+    not math.isfinite(true_rent)
+    or true_rent <= 0
+    or bool(ref.at[z, "rent_unavailable"])
+    or true_rent > budget
+):
             row["budget_violations"].append({"zip": z, "rent": true_rent, "budget": budget})
-        if true_rent is not None and abs(true_rent - r["median_rent_usd"]) > 1e-9:
+        if true_rent is not None and abs(true_rent - r["budget_rent_usd"]) > 1e-9:
             row["rent_echo_mismatches"].append(
-                {"zip": z, "engine": r["median_rent_usd"], "reference": true_rent}
+                {"zip": z, "engine": r["budget_rent_usd"], "reference": true_rent}
             )
-        if z in ref.index and bool(ref.at[z, "rent_imputed"]):
-            row["recommended_with_imputed_rent"].append(z)
+        if z in ref.index and bool(ref.at[z, "rent_unavailable"]):
+            row["recommended_with_unavailable_rent"].append(z)
         pop = ref.at[z, "population"] if z in ref.index else None
         if pop is not None and pd.notna(pop) and int(pop) == 0:
             row["recommended_zero_population"].append(z)
@@ -347,8 +391,8 @@ def render(rows: list[dict], summary: dict, top_k: int) -> None:
                 f"not_relevant ZIPs excluded by budget anyway, so they are weak negatives: "
                 f"{r['unreachable_negatives']}"
             )
-        if r["recommended_with_imputed_rent"]:
-            notes.append(f"recommended on imputed rent: {r['recommended_with_imputed_rent']}")
+        if r["recommended_with_unavailable_rent"]:
+            notes.append(f"recommended with unavailable rent: {r['recommended_with_unavailable_rent']}")
         if r["recommended_zero_population"]:
             notes.append(f"ZERO-POPULATION ZIPs recommended: {r['recommended_zero_population']}")
         if notes:
