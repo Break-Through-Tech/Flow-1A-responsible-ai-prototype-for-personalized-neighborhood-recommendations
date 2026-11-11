@@ -185,4 +185,4 @@ It uses the same recommendations as `eval/run_eval.py` and accepts the same `--p
 
 Checks: `python eval/test_theme_coverage.py`. The tests use made-up sentences, so they keep passing when the corpus changes.
 
-Known limits: the keyword list was tuned on a small corpus and will miss phrasing it has not seen. "Busy area, but I can't hear any noise" reads as `contradicts`, because the contradicting cue wins. Words like Uber or scooters are not counted as transit, which here means public transit.
+Known limits: the keyword list was tuned on a small corpus and will miss phrasing it has not seen. It reads words, not intent: "you have to stay super quiet" (a house rule) counts as supporting `quiet` just like "the street is quiet" (a description). "Busy area, but I can't hear any noise" reads as `contradicts`, because the contradicting cue wins. Words like Uber or scooters are not counted as transit, which here means public transit.
