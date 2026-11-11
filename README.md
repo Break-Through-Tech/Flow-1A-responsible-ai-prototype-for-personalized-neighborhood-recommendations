@@ -126,6 +126,7 @@ python scripts/test_tool_contracts.py     # well-formed, malformed, empty and no
 | Arguments are well-formed but unusable (only unscored tags such as `walkable`) | `invalid_input` from the tool itself |
 | Nothing matches | `not_found` (`area_stats`), `no_snippets` (`crowd_themes`) or `no_areas_within_budget` (`recommend`), with an empty list |
 | The tool's result breaks its output schema | `{"status": "contract_violation", ...}` in place of the result, so the agent never sees unchecked data |
+| The tool itself raises an error | `{"status": "tool_error", "tool", "error"}` instead of an SDK error |
 
 Arguments a tool doesn't declare are dropped by the MCP SDK before the contract sees them, so they are ignored rather than rejected.
 

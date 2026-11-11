@@ -221,6 +221,16 @@ def test_contract_violation_is_returned_instead_of_the_bad_result():
     assert "principles" not in result
 
 
+def test_tool_error_is_returned_instead_of_raising():
+    def broken(zip_code=None):
+        raise KeyError("median_rent_usd")
+
+    result = c.call_tool("area_stats", broken, {"zip_code": "33130"})
+    assert result["status"] == "tool_error" and result["tool"] == "area_stats"
+    assert "KeyError" in result["error"]
+    assert c.validate_output("area_stats", result) == []
+
+
 def test_server_publishes_the_contracts():
     async def run():
         async with Client(server) as client:

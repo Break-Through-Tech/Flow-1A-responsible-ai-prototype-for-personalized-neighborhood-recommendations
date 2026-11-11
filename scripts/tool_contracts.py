@@ -7,7 +7,9 @@ and routes every call through call_tool(), so:
 - arguments that break the input schema come back as structured
   {"status": "invalid_input", "errors": [...]} instead of a free-text error;
 - a result that breaks the output schema comes back as
-  {"status": "contract_violation", ...} instead of reaching the agent.
+  {"status": "contract_violation", ...} instead of reaching the agent;
+- a tool that raises comes back as {"status": "tool_error", ...} instead of
+  an SDK error.
 
 Every result has a "status". The output schemas pin the shape of each status,
 for example "no_areas_within_budget" always has an empty recommendations list.
@@ -140,11 +142,20 @@ _CONTRACT_VIOLATION = {
     },
     "required": ["status", "tool", "error", "errors"],
 }
+_TOOL_ERROR = {
+    "type": "object",
+    "properties": {
+        "status": {"const": "tool_error"},
+        "tool": {"type": "string"},
+        "error": {"type": "string", "minLength": 1},
+    },
+    "required": ["status", "tool", "error"],
+}
 
 
 def _result(*variants: dict) -> dict:
-    """A tool output: one of its own variants, invalid_input or contract_violation."""
-    return {"type": "object", "oneOf": [*variants, _INVALID_INPUT, _CONTRACT_VIOLATION]}
+    """A tool output: one of its own variants, invalid_input, contract_violation or tool_error."""
+    return {"type": "object", "oneOf": [*variants, _INVALID_INPUT, _CONTRACT_VIOLATION, _TOOL_ERROR]}
 
 
 def _variant(status: str, properties: dict, required: list[str]) -> dict:
@@ -392,13 +403,20 @@ def validate_output(tool: str, result: dict) -> list[dict]:
 
 
 def call_tool(tool: str, fn: Callable[..., dict], arguments: dict) -> dict:
-    """Validate arguments, call fn, validate the result. Never raises for bad input."""
+    """Validate arguments, call fn, validate the result. Always returns a status, never raises."""
     errors = validate_input(tool, arguments)
     if errors:
         summary = "; ".join(f"{e['field']}: {e['message']}" for e in errors)
         return {"status": "invalid_input", "error": summary, "errors": errors}
 
-    result = fn(**arguments)
+    try:
+        result = fn(**arguments)
+    except Exception as exc:
+        return {
+            "status": "tool_error",
+            "tool": tool,
+            "error": f"{tool} failed ({type(exc).__name__}: {exc}); nothing from it is safe to show.",
+        }
     errors = validate_output(tool, result)
     if errors:
         return {

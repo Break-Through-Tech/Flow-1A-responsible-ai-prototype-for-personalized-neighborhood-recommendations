@@ -98,7 +98,8 @@ def _publish_contracts() -> None:
     """Advertise the tool_contracts schemas instead of the SDK's Any-typed ones.
 
     The SDK has no public hook for this, so it sets the registered tool's fields
-    directly; test_tool_contracts.py checks that list_tools returns them.
+    directly through private internals (server._tool_manager); test_tool_contracts.py
+    checks that list_tools returns them. Re-check this when upgrading mcp past 2.2.0.
     """
     for name in tool_contracts.INPUT_SCHEMAS:
         tool = server._tool_manager.get_tool(name)
