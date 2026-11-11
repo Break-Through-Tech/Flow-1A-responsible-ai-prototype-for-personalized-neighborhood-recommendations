@@ -1,0 +1,827 @@
+{
+  "run": {
+    "commit": "b6a4dfd",
+    "branch": "main",
+    "command": "python eval/run_eval.py --json eval/results/baseline_sep.json"
+  },
+  "summary": {
+    "profiles_total": 20,
+    "profiles_scored": 20,
+    "profiles_errored": 0,
+    "top_k": 5,
+    "precision": {
+      "3": 0.2833333333333333,
+      "5": 0.2
+    },
+    "precision_ceiling": {
+      "3": 0.8666666666666666,
+      "5": 0.52
+    },
+    "mean_cosine": 0.8104331470223091,
+    "budget_filter_pass_rate": 1.0,
+    "budget_profiles_passing": 20,
+    "profiles_with_unreachable_expected": []
+  },
+  "profiles": [
+    {
+      "profile_id": "P1_nyc_couple_own_apt",
+      "budget_max": 2500,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [
+        "walkable"
+      ],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33150",
+        "33135",
+        "33054",
+        "33030",
+        "33010"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.7085799571037386,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 67,
+      "active_features": [
+        "transit"
+      ]
+    },
+    {
+      "profile_id": "P2_solo_own_apt_social",
+      "budget_max": 2000,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [
+        "walkable"
+      ],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33015",
+        "33012",
+        "33033",
+        "33157",
+        "33032"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.7245528478532611,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [
+        "33185"
+      ],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 52,
+      "active_features": [
+        "social"
+      ]
+    },
+    {
+      "profile_id": "P3_solo_coliving_budget",
+      "budget_max": 1800,
+      "n_relevant": 2,
+      "n_reachable_relevant": 2,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33130",
+        "33127",
+        "33128",
+        "33142",
+        "33125"
+      ],
+      "precision": {
+        "3": 0.6666666666666666,
+        "5": 0.4
+      },
+      "precision_ceiling": {
+        "3": 0.6666666666666666,
+        "5": 0.4
+      },
+      "mean_cosine": 0.7222810035339952,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [
+        "33156"
+      ],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 31,
+      "active_features": [
+        "transit",
+        "co_living_friendly"
+      ]
+    },
+    {
+      "profile_id": "P4_quiet_pets_budget",
+      "budget_max": 2200,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [
+        "pet_friendly"
+      ],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33187",
+        "33184",
+        "33140",
+        "33035",
+        "33190"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.8072761642769904,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 60,
+      "active_features": [
+        "quiet"
+      ]
+    },
+    {
+      "profile_id": "P5_brickell_focus",
+      "budget_max": 3000,
+      "n_relevant": 2,
+      "n_reachable_relevant": 2,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33012",
+        "33157",
+        "33033",
+        "33142",
+        "33015"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 0.6666666666666666,
+        "5": 0.4
+      },
+      "mean_cosine": 0.9076357630827496,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 74,
+      "active_features": [
+        "transit",
+        "social"
+      ]
+    },
+    {
+      "profile_id": "P6_co_leaser_coliving_transit",
+      "budget_max": 1800,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33130",
+        "33127",
+        "33128",
+        "33142",
+        "33125"
+      ],
+      "precision": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.7222810035339952,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 31,
+      "active_features": [
+        "transit",
+        "co_living_friendly"
+      ]
+    },
+    {
+      "profile_id": "P7_solo_own_apt_low_budget_transit",
+      "budget_max": 1600,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33150",
+        "33135",
+        "33054",
+        "33030",
+        "33010"
+      ],
+      "precision": {
+        "3": 0.3333333333333333,
+        "5": 0.2
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.7085799571037386,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 14,
+      "active_features": [
+        "transit"
+      ]
+    },
+    {
+      "profile_id": "P8_solo_coliving_quiet",
+      "budget_max": 2700,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33129",
+        "33122",
+        "33140",
+        "33180",
+        "33154"
+      ],
+      "precision": {
+        "3": 0.3333333333333333,
+        "5": 0.2
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.8000947424893475,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 70,
+      "active_features": [
+        "quiet",
+        "co_living_friendly"
+      ]
+    },
+    {
+      "profile_id": "P9_co_leaser_own_apt_quiet_high_budget",
+      "budget_max": 3600,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33158",
+        "33149",
+        "33122",
+        "33194",
+        "33146"
+      ],
+      "precision": {
+        "3": 0.3333333333333333,
+        "5": 0.4
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.9061102174247045,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 77,
+      "active_features": [
+        "quiet"
+      ]
+    },
+    {
+      "profile_id": "P10_co_leaser_coliving_social_budget",
+      "budget_max": 1800,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33033",
+        "33012",
+        "33157",
+        "33130",
+        "33127"
+      ],
+      "precision": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.7395194273896273,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 31,
+      "active_features": [
+        "social",
+        "co_living_friendly"
+      ]
+    },
+    {
+      "profile_id": "P11_solo_own_apt_transit_quiet",
+      "budget_max": 1700,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33170",
+        "33167",
+        "33034",
+        "33168",
+        "33189"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.9630858988903063,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 23,
+      "active_features": [
+        "transit",
+        "quiet"
+      ]
+    },
+    {
+      "profile_id": "P12_solo_own_apt_no_budget_match",
+      "budget_max": 1000,
+      "n_relevant": 0,
+      "n_reachable_relevant": 0,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "mean_cosine": null,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "no_areas_within_budget",
+      "candidate_count": 0,
+      "active_features": [
+        "transit"
+      ]
+    },
+    {
+      "profile_id": "P13_co_leaser_own_apt_social_quiet",
+      "budget_max": 2500,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33196",
+        "33177",
+        "33186",
+        "33018",
+        "33175"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.8576881656955149,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 67,
+      "active_features": [
+        "social",
+        "quiet"
+      ]
+    },
+    {
+      "profile_id": "P14_solo_coliving_transit_social",
+      "budget_max": 2000,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33012",
+        "33157",
+        "33033",
+        "33142",
+        "33015"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.9059139805960428,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 52,
+      "active_features": [
+        "transit",
+        "social",
+        "co_living_friendly"
+      ]
+    },
+    {
+      "profile_id": "P15_co_leaser_coliving_transit_quiet",
+      "budget_max": 2500,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33129",
+        "33181",
+        "33140",
+        "33190",
+        "33166"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.920702970358995,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 67,
+      "active_features": [
+        "transit",
+        "quiet",
+        "co_living_friendly"
+      ]
+    },
+    {
+      "profile_id": "P16_solo_own_apt_transit_social_high_budget",
+      "budget_max": 3000,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33012",
+        "33157",
+        "33033",
+        "33142",
+        "33015"
+      ],
+      "precision": {
+        "3": 0.6666666666666666,
+        "5": 0.6
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.9076357630827496,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 74,
+      "active_features": [
+        "transit",
+        "social"
+      ]
+    },
+    {
+      "profile_id": "P17_solo_own_apt_exact_budget",
+      "budget_max": 1792,
+      "n_relevant": 1,
+      "n_reachable_relevant": 1,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33150",
+        "33135",
+        "33054",
+        "33030",
+        "33010"
+      ],
+      "precision": {
+        "3": 0.0,
+        "5": 0.0
+      },
+      "precision_ceiling": {
+        "3": 0.3333333333333333,
+        "5": 0.2
+      },
+      "mean_cosine": 0.7085799571037386,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 30,
+      "active_features": [
+        "transit"
+      ]
+    },
+    {
+      "profile_id": "P18_solo_own_apt_extreme_budget_quiet",
+      "budget_max": 10000,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33158",
+        "33149",
+        "33122",
+        "33194",
+        "33146"
+      ],
+      "precision": {
+        "3": 0.3333333333333333,
+        "5": 0.4
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.9061102174247045,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 77,
+      "active_features": [
+        "quiet"
+      ]
+    },
+    {
+      "profile_id": "P19_solo_own_apt_unscored_preferences",
+      "budget_max": 2000,
+      "n_relevant": 3,
+      "n_reachable_relevant": 3,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [
+        "walkable",
+        "pet_friendly"
+      ],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33150",
+        "33135",
+        "33054",
+        "33030",
+        "33010"
+      ],
+      "precision": {
+        "3": 0.3333333333333333,
+        "5": 0.2
+      },
+      "precision_ceiling": {
+        "3": 1.0,
+        "5": 0.6
+      },
+      "mean_cosine": 0.7085799571037386,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 52,
+      "active_features": [
+        "transit"
+      ]
+    },
+    {
+      "profile_id": "P20_co_leaser_own_apt_social_quiet_tight_budget",
+      "budget_max": 1550,
+      "n_relevant": 2,
+      "n_reachable_relevant": 2,
+      "unreachable_relevant": [],
+      "unknown_relevant": [],
+      "unscored_tags": [],
+      "status": "ok",
+      "error": null,
+      "returned_zips": [
+        "33128",
+        "33127",
+        "33136",
+        "33147",
+        "33125"
+      ],
+      "precision": {
+        "3": 0.6666666666666666,
+        "5": 0.4
+      },
+      "precision_ceiling": {
+        "3": 0.6666666666666666,
+        "5": 0.4
+      },
+      "mean_cosine": 0.7730217993759325,
+      "budget_pass": true,
+      "budget_violations": [],
+      "rent_echo_mismatches": [],
+      "false_positives": [],
+      "unreachable_negatives": [],
+      "recommended_with_imputed_rent": [],
+      "recommended_zero_population": [],
+      "engine_status": "ok",
+      "candidate_count": 13,
+      "active_features": [
+        "social",
+        "quiet"
+      ]
+    }
+  ]
+}
