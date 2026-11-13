@@ -127,6 +127,50 @@ def test_crowd_themes_returns_text_for_a_known_zip_and_filters_by_theme():
     assert t.crowd_themes("x")["status"] == "invalid_input"
 
 
+def test_crowd_themes_extracted_quotes_real_reviews_with_a_stance():
+    reviews = pd.read_csv(t.CROWD_PATH, dtype={"zip": str, "snippet_id": str})
+    for zip_code in sorted(reviews["zip"].unique()):
+        out = t.crowd_themes(zip_code)
+        ex = out["extracted"]
+        assert ex["method"] and set(ex["summary"]) == set(ex["themes"])
+        own = reviews[reviews["zip"] == zip_code].set_index("snippet_id")
+        for theme, entries in ex["themes"].items():
+            assert sum(ex["summary"][theme].values()) == len(entries)
+            for e in entries:
+                assert e["stance"] in ("supports", "contradicts", "mentions")
+                # nothing invented: every entry is one of this ZIP's reviews, quoted as is
+                assert e["snippet_id"] in own.index
+                assert e["text"] == own.at[e["snippet_id"], "text"]
+                assert e["evidence"].lower() in e["text"].lower()
+
+
+def test_extracted_reads_the_text_not_the_label():
+    rows = pd.DataFrame([
+        ("R1", "33130", "src", "transit", "Quiet street, nice at night."),   # label misses quiet
+        ("R2", "33130", "src", "quiet", "Very noisy on weekends."),         # label says quiet, text disagrees
+        ("R3", "33130", None, "social", "Lots of dogs around."),             # blank source must not break JSON
+        ("R4", "33130", "src", "quiet", "Rent is high."),                    # no theme in the text
+    ], columns=["snippet_id", "zip", "source", "theme", "text"])
+    quiet = t._extracted(rows, "quiet")
+    assert quiet["count"] == 2 and set(quiet["themes"]) == {"quiet"}
+    assert {(e["snippet_id"], e["stance"]) for e in quiet["themes"]["quiet"]} == {("R1", "supports"), ("R2", "contradicts")}
+    assert quiet["summary"] == {"quiet": {"supports": 1, "contradicts": 1, "mentions": 0}}
+    everything = t._extracted(rows, None)
+    assert everything["themes"]["pet_friendly"][0]["source"] == ""
+    json.dumps(everything, allow_nan=False)
+    assert "co_living" not in everything["themes_supported"]
+    assert t._extracted(rows, "co_living")["count"] == 0
+
+
+def test_crowd_themes_extracted_follows_the_theme_filter_and_unknown_zips():
+    some_zip = pd.read_csv(t.CROWD_PATH, dtype={"zip": str})["zip"].iloc[0]
+    narrowed = t.crowd_themes(some_zip, theme="quiet")["extracted"]
+    assert set(narrowed["themes"]) <= {"quiet"} and set(narrowed["summary"]) <= {"quiet"}
+    assert narrowed["count"] == sum(len(v) for v in narrowed["themes"].values())
+    empty = t.crowd_themes("99999")["extracted"]
+    assert empty["themes"] == {} and empty["summary"] == {} and empty["count"] == 0
+
+
 def test_recommend_returns_three_to_five_zips_within_budget():
     for k in (3, 5):
         out = t.recommend(**PROFILE, k=k)
