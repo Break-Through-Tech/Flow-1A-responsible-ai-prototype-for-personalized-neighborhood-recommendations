@@ -172,7 +172,7 @@ python scripts/theme_extraction.py                    # counts per theme, review
 python scripts/theme_extraction.py --out themes.csv   # also write the structured snippets
 ```
 
-`themes_for_zip()` returns one ZIP's themes in a shape ready for the `crowd_themes` tool (Task #17).
+The `crowd_themes` MCP tool returns these as an `extracted` field next to its usual `snippets`: per theme, each review's stance, the phrase that set it, and the review text, plus a count of reviews for, against and only mentioning the theme. `snippets` still filters on the hand-written label; `extracted` reads the text.
 
 **Theme coverage** is the NLP row of the scorecard. For every profile in `eval/recommendation_profiles.json`, it takes the ZIPs the engine recommends and checks whether each one has a review about at least one of the profile's tags:
 

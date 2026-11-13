@@ -38,6 +38,7 @@ if str(_ROOT) not in sys.path:
 
 from scripts.feature_schema import TAG_TO_COLUMN, VALID_HOUSING_PREFERENCES
 from scripts.recommender import DEFAULT_TOP_K, VALID_HOUSEHOLDS
+from scripts.theme_extraction import STANCES, THEMES as EXTRACTED_THEMES
 
 CROWD_PATH = _ROOT / "data" / "crowd_text_snippets.csv"
 
@@ -78,7 +79,11 @@ INPUT_SCHEMAS: dict[str, dict] = {
             "theme": {
                 "type": ["string", "null"],
                 "enum": [*CROWD_THEMES, None],
-                "description": "Only return snippets with this theme.",
+                "description": (
+                    "Narrow to one theme. `snippets` (and status/count) use the hand-written label; "
+                    "`extracted` uses the themes read from the review text, so it can include reviews "
+                    "the label misses."
+                ),
             },
         },
         "required": ["zip_code"],
@@ -220,11 +225,50 @@ _SNIPPET = {
     },
     "required": ["snippet_id", "theme", "source", "text"],
 }
+_EXTRACTED_SNIPPET = {
+    "type": "object",
+    "properties": {
+        "snippet_id": {"type": "string"},
+        "stance": {"enum": list(STANCES)},
+        "evidence": {"type": "string", "minLength": 1},
+        "text": {"type": "string", "minLength": 1},
+        "source": {"type": "string"},
+    },
+    "required": ["snippet_id", "stance", "evidence", "text", "source"],
+    "additionalProperties": False,
+}
+_STANCE_COUNTS = {
+    "type": "object",
+    "properties": {s: {"type": "integer", "minimum": 0} for s in STANCES},
+    "required": list(STANCES),
+    "additionalProperties": False,
+}
+_EXTRACTED = {
+    "type": "object",
+    "properties": {
+        "method": {"type": "string", "minLength": 1},
+        "themes_supported": {"type": "array", "items": {"enum": list(EXTRACTED_THEMES)}, "minItems": 1},
+        "count": {"type": "integer", "minimum": 0},
+        "summary": {
+            "type": "object",
+            "propertyNames": {"enum": list(EXTRACTED_THEMES)},
+            "additionalProperties": _STANCE_COUNTS,
+        },
+        "themes": {
+            "type": "object",
+            "propertyNames": {"enum": list(EXTRACTED_THEMES)},
+            "additionalProperties": {"type": "array", "items": _EXTRACTED_SNIPPET, "minItems": 1},
+        },
+    },
+    "required": ["method", "themes_supported", "count", "summary", "themes"],
+    "additionalProperties": False,
+}
 _CROWD_COMMON = {
     "zip_code": _ZIP,
     "theme": _STR_OR_NULL,
     "available_themes": _STRINGS,
     "count": {"type": "integer", "minimum": 0},
+    "extracted": _EXTRACTED,
 }
 
 _REASON = {

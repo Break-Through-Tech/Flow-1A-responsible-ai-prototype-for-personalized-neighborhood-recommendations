@@ -79,7 +79,7 @@ A three-layer system:
 | `schema` | Column definitions for all datasets |
 | `recommend` | Ranked ZIPs for a given preference profile |
 | `area_stats` | Public stats for a ZIP or all ZIPs |
-| `crowd_themes` | Review theme snippets for a ZIP |
+| `crowd_themes` | Review theme snippets for a ZIP, plus themes read from the text with a for/against/mentions stance |
 | `ethics` | Fair-use rules and prohibited uses |
 
 See `MCP_SETUP.md` for the full contract.

@@ -209,6 +209,13 @@ def test_output_contract_catches_a_broken_result():
     assert c.validate_output("recommend", {**good, "status": "great"})
     empty_but_ok = {**good, "recommendations": []}
     assert c.validate_output("recommend", empty_but_ok)  # "ok" must have at least one match
+    themes = _call("crowd_themes", {"zip_code": "33130"})
+    entry = next(iter(themes["extracted"]["themes"].values()))[0]
+    bad_stance = {**themes, "extracted": {**themes["extracted"],
+                  "themes": {"quiet": [{**entry, "stance": "positive"}]}}}
+    assert any("stance" in e["field"] for e in c.validate_output("crowd_themes", bad_stance))
+    no_extracted = {k: v for k, v in themes.items() if k != "extracted"}
+    assert c.validate_output("crowd_themes", no_extracted)
     assert c.validate_output("area_stats", {"status": "ok", "zip_code": None, "count": 1,
                                             "areas": [{"zip": "33127", "area_name": None,
                                                        "stats": {"rent": float("nan")}, "unavailable": []}]})

@@ -27,6 +27,7 @@ from scripts.feature_schema import ID_COLUMN
 from scripts.pull_census import TOP_CODES as _CENSUS_TOP_CODES
 from scripts.recommender import DEFAULT_TOP_K
 from scripts.recommender import recommend as _recommend
+from scripts.theme_extraction import STANCES, THEMES as EXTRACTED_THEMES, extract_themes
 
 DATA_DIR = _ROOT / "data"
 DICTIONARY_PATH = _ROOT / "data_dictionary.md"
@@ -231,7 +232,13 @@ def area_stats(zip_code: str | None = None) -> dict:
 
 
 def crowd_themes(zip_code: str, theme: str | None = None) -> dict:
-    """Review snippets for a ZIP, optionally narrowed to one theme."""
+    """Review snippets for a ZIP, optionally narrowed to one theme.
+
+    `snippets` filters on the hand-written theme label. `extracted` reads the
+    themes from the review text itself (scripts/theme_extraction.py), with a
+    stance per review and the phrase that matched, so the agent can say how
+    many reviews speak for or against a theme and quote the evidence.
+    """
     error = _check_zip(zip_code)
     if error:
         return _invalid(error)
@@ -242,6 +249,7 @@ def crowd_themes(zip_code: str, theme: str | None = None) -> dict:
         known = sorted(snippets["theme"].dropna().unique().tolist())
         return _invalid(f"Unknown theme: {theme!r}. Expected one of {known}.")
     rows = snippets[snippets[ID_COLUMN] == zip_code]
+    extracted = _extracted(rows, theme)
     available = sorted(rows["theme"].dropna().unique().tolist())
     if theme:
         rows = rows[rows["theme"] == theme]
@@ -261,6 +269,43 @@ def crowd_themes(zip_code: str, theme: str | None = None) -> dict:
             }
             for _, row in rows.iterrows()
         ],
+        "extracted": extracted,
+    }
+
+
+def _extracted(zip_rows: pd.DataFrame, theme: str | None) -> dict:
+    """Themes read from the review text, not the hand label, narrowed to `theme` if given.
+
+    Every entry quotes an existing review (snippet_id, text, source) plus the
+    phrase that set its stance; nothing is generated. This can find reviews
+    the hand label misses, so `extracted.count` can be above 0 even when the
+    labeled `snippets` are empty. Only the themes in `themes_supported` are
+    extracted; a hand-label theme outside them always comes back empty here.
+    """
+    # A blank id or source would serialize as NaN and break the whole result.
+    rows = zip_rows.assign(
+        snippet_id=zip_rows["snippet_id"].fillna("").astype(str),
+        source=zip_rows["source"].fillna("").astype(str),
+    )
+    found: dict[str, list[dict]] = {}
+    for r in extract_themes(rows).itertuples(index=False):
+        if theme and r.theme != theme:
+            continue
+        found.setdefault(r.theme, []).append(
+            {"snippet_id": r.snippet_id, "stance": r.stance, "evidence": r.evidence,
+             "text": r.text, "source": r.source}
+        )
+    found = dict(sorted(found.items()))
+    return {
+        "method": (
+            "Keyword lexicon over the review text (scripts/theme_extraction.py). Stance is "
+            "supports, contradicts or mentions (names the topic without judging it). "
+            "Independent of the hand label that `status`, `count` and `snippets` use."
+        ),
+        "themes_supported": list(EXTRACTED_THEMES),
+        "count": sum(len(v) for v in found.values()),
+        "summary": {t: {s: sum(r["stance"] == s for r in v) for s in STANCES} for t, v in found.items()},
+        "themes": found,
     }
 
 
