@@ -27,6 +27,7 @@ from scripts.feature_schema import ID_COLUMN
 from scripts.pull_census import TOP_CODES as _CENSUS_TOP_CODES
 from scripts.recommender import DEFAULT_TOP_K
 from scripts.recommender import recommend as _recommend
+from scripts.theme_extraction import STANCES, THEMES as EXTRACTED_THEMES, extract_themes
 
 DATA_DIR = _ROOT / "data"
 DICTIONARY_PATH = _ROOT / "data_dictionary.md"
@@ -231,14 +232,24 @@ def area_stats(zip_code: str | None = None) -> dict:
 
 
 def crowd_themes(zip_code: str, theme: str | None = None) -> dict:
-    """Review snippets for a ZIP, optionally narrowed to one theme."""
+    """Review snippets for a ZIP, optionally narrowed to one theme.
+
+    `snippets` filters on the hand-written theme label. `extracted` reads the
+    themes from the review text itself (scripts/theme_extraction.py), with a
+    stance per review and the phrase that matched, so the agent can say how
+    many reviews speak for or against a theme and quote the evidence.
+    """
     error = _check_zip(zip_code)
     if error:
         return _invalid(error)
     zip_code = zip_code.strip()
 
     snippets = pd.read_csv(CROWD_PATH, dtype={ID_COLUMN: str})
+    if theme and theme not in set(snippets["theme"].dropna()):
+        known = sorted(snippets["theme"].dropna().unique().tolist())
+        return _invalid(f"Unknown theme: {theme!r}. Expected one of {known}.")
     rows = snippets[snippets[ID_COLUMN] == zip_code]
+    extracted = _extracted(rows, theme)
     available = sorted(rows["theme"].dropna().unique().tolist())
     if theme:
         rows = rows[rows["theme"] == theme]
@@ -258,6 +269,43 @@ def crowd_themes(zip_code: str, theme: str | None = None) -> dict:
             }
             for _, row in rows.iterrows()
         ],
+        "extracted": extracted,
+    }
+
+
+def _extracted(zip_rows: pd.DataFrame, theme: str | None) -> dict:
+    """Themes read from the review text, not the hand label, narrowed to `theme` if given.
+
+    Every entry quotes an existing review (snippet_id, text, source) plus the
+    phrase that set its stance; nothing is generated. This can find reviews
+    the hand label misses, so `extracted.count` can be above 0 even when the
+    labeled `snippets` are empty. Only the themes in `themes_supported` are
+    extracted; a hand-label theme outside them always comes back empty here.
+    """
+    # A blank id or source would serialize as NaN and break the whole result.
+    rows = zip_rows.assign(
+        snippet_id=zip_rows["snippet_id"].fillna("").astype(str),
+        source=zip_rows["source"].fillna("").astype(str),
+    )
+    found: dict[str, list[dict]] = {}
+    for r in extract_themes(rows).itertuples(index=False):
+        if theme and r.theme != theme:
+            continue
+        found.setdefault(r.theme, []).append(
+            {"snippet_id": r.snippet_id, "stance": r.stance, "evidence": r.evidence,
+             "text": r.text, "source": r.source}
+        )
+    found = dict(sorted(found.items()))
+    return {
+        "method": (
+            "Keyword lexicon over the review text (scripts/theme_extraction.py). Stance is "
+            "supports, contradicts or mentions (names the topic without judging it). "
+            "Independent of the hand label that `status`, `count` and `snippets` use."
+        ),
+        "themes_supported": list(EXTRACTED_THEMES),
+        "count": sum(len(v) for v in found.values()),
+        "summary": {t: {s: sum(r["stance"] == s for r in v) for s in STANCES} for t, v in found.items()},
+        "themes": found,
     }
 
 
@@ -270,7 +318,9 @@ def recommend(
 ) -> dict:
     """Ranked ZIP matches from the baseline recommender (scripts/recommender.py).
 
-    Each recommendation gets a "top_coded" note (or null) for its median_rent_usd.
+    Each recommendation gets a "top_coded" note (or null) for its median_rent_usd,
+    ranking_reasons and a summary built only from values the recommender
+    returned. The result gets a rank_basis saying how the ranking works.
     """
     profile = {
         "budget_max": budget_max,
@@ -282,9 +332,67 @@ def recommend(
         result = _recommend(profile, top_k=k)
     except ValueError as exc:
         return _invalid(str(exc))
+
+    features = ", ".join(result["vector_features"])
+    result["rank_basis"] = (
+        f"ZIPs above budget_max are removed first. The rest are ranked by cosine similarity "
+        f"between the user vector and each ZIP's scores on {features}; ties go to the lower ZIP."
+    )
     for rec in result["recommendations"]:
         rec["top_coded"] = _top_coded("median_rent_usd", rec["median_rent_usd"])
+        rec["ranking_reasons"] = _ranking_reasons(rec, result)
+        rec["summary"] = _summary(rec, result)
     return result
+
+
+def _ranking_reasons(rec: dict, result: dict) -> list[dict]:
+    """Why a ZIP got its rank, using only values already in the recommend result.
+
+    Cosine similarity rises with the scores on the selected features and falls
+    with the scores on the unselected ones, so both are listed.
+    """
+    reasons = [
+        {
+            "code": "within_budget",
+            "median_rent_usd": rec["median_rent_usd"],
+            "budget_max": result["budget_max"],
+            "headroom_usd": result["budget_max"] - rec["median_rent_usd"],
+            "rent_is_top_coded": rec["top_coded"] is not None,
+        }
+    ]
+    for feature in result["vector_features"]:
+        score = rec["feature_scores"][feature]
+        if feature in result["active_features"]:
+            reasons.append({"code": "selected_feature", "feature": feature, "area_score": score})
+        else:
+            reasons.append(
+                {
+                    "code": "unselected_feature",
+                    "feature": feature,
+                    "area_score": score,
+                    "effect": "lowers_similarity" if score > 0 else "none",
+                }
+            )
+    return reasons
+
+
+def _summary(rec: dict, result: dict) -> str:
+    name = rec["area_name"] or rec["zip"]
+    selected = ", ".join(f"{f['feature']} {f['area_score']:.2f}" for f in rec["matched_features"])
+    budget = f"${result['budget_max']:,.0f}"
+    if rec["top_coded"]:
+        # The ACS top code passed the budget filter, but the real median is only
+        # known to be above the floor, so it may still be over budget.
+        rent = (
+            f"median rent more than ${rec['top_coded']['floor']:,.0f} (ACS top code, exact value unknown, "
+            f"so it may exceed the {budget} budget)"
+        )
+    else:
+        rent = f"median rent ${rec['median_rent_usd']:,.0f}, within the {budget} budget"
+    return (
+        f"#{rec['rank']} {name} ({rec['zip']}): {rent}. Similarity {rec['similarity']:.3f}; "
+        f"selected-feature scores: {selected}."
+    )
 
 
 def ethics() -> dict:

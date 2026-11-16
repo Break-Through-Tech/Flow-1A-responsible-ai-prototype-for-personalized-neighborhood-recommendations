@@ -22,7 +22,7 @@ Starter test cases live in [`eval/`](eval/).
 | **Precision@5** | (# relevant ZIPs in top 5) / 5 | Higher is better |
 | **Mean cosine similarity** | Average similarity(user vector, recommended ZIP vectors) | Higher is better |
 | **Budget filter pass rate** | % profiles where all top-k ZIPs are within budget | 100% expected |
-| **NLP theme coverage** | For each recommended ZIP, % with themes matching user priority tags | Higher is better |
+| **NLP theme coverage** | For each recommended ZIP, % with themes matching user priority tags (definition below) | Higher is better |
 
 ### How to run
 
@@ -30,6 +30,24 @@ Starter test cases live in [`eval/`](eval/).
 2. Run your `recommend` logic for each profile
 3. Compare top-k ZIPs to `expected_relevant_zips`
 4. Log baseline (September) vs. final (November)
+
+### NLP theme coverage: definition
+
+Run with `python eval/theme_coverage.py` (details in [SETUP.md](SETUP.md) section 9).
+
+- **Themes** are read from the review text by `scripts/theme_extraction.py`, not taken from the hand-written `theme` column. The five themes are `transit`, `social`, `quiet`, `walkable` and `pet_friendly`.
+- **Stance:** each theme a review talks about is tagged `supports` (speaks for it), `contradicts` (speaks against it) or `mentions` (names the topic without judging it).
+- **Scored unit:** one (profile, recommended ZIP) pair, using the same top-k ZIPs the Layer 1 eval scores.
+- **Theme tags:** the profile's tags that are one of the five themes. Profiles with none (e.g. only `co_living`) are skipped, not scored as 0.
+- **Covered:** the ZIP has at least one review on one of the profile's theme tags, with any stance.
+
+| Number | Formula |
+|--------|---------|
+| **Theme coverage** (scorecard) | covered pairs / all scored pairs |
+| **Supported rate** | pairs with at least one `supports` review on a theme tag / all scored pairs |
+| **Review availability** | recommended ZIPs with any review / recommended ZIPs (counted from the raw reviews) |
+
+Coverage asks whether there is crowd text to explain a match, not whether the text agrees with it; the supported rate answers that. Read coverage next to review availability: if few recommended ZIPs have any reviews, low coverage is a data gap, not an extraction problem.
 
 ---
 
