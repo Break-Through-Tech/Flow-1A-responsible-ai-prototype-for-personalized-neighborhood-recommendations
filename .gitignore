@@ -17,6 +17,9 @@ env/
 # Models / pickles
 *.pkl
 
+# Reproducible national Zillow download; keep the project ZIP snapshot + metadata.
+data/raw/Zip_zori_uc_sfrcondomfr_sm_month.csv
+
 # OS
 .DS_Store
 Thumbs.db

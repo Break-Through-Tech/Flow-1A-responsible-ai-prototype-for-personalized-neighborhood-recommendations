@@ -239,7 +239,7 @@ def test_cli_json_output_matches_the_printed_run():
     out = Path(tempfile.mkdtemp()) / "nested" / "result.json"
     assert _cli("--json", str(out)).returncode == 0
     payload = json.loads(out.read_text(encoding="utf-8"))
-    assert payload["summary"]["profiles_total"] == len(payload["profiles"]) == 5
+    assert payload["summary"]["profiles_total"] == len(payload["profiles"]) == len(h.load_profiles(h.PROFILES_PATH))
     assert set(payload["summary"]["precision"]) == {"3", "5"}
 def test_rent_ranges_handle_boundaries_and_reversed_sources():
     import pandas as pd
@@ -376,6 +376,30 @@ def test_fixture_rent_bounds_match_explicit_expected_values():
         assert pd.isna(ref.at["90005", "rent"])
         assert pd.isna(ref.at["90005", "rent_upper"])
         assert ref.at["90005", "rent_unavailable"]
+
+
+def test_rounding_does_not_change_budget_eligibility():
+    import numpy as np
+    import pandas as pd
+    from scripts.recommender import filter_by_budget, rank_areas
+
+    areas = pd.DataFrame({
+        "zip": ["90000", "90001"],
+        "area_name": ["below", "above"],
+        "transit": [1.0, 1.0],
+        "rent_lower_usd": [1499.51, 1500.49],
+        "rent_upper_usd": [1499.51, 1500.49],
+        "acs_rent_estimate_usd": [None, None],
+        "zori_rent_usd": [1499.51, 1500.49],
+        "rent_basis": ["zori_only", "zori_only"],
+        "rent_source": ["Zillow ZORI", "Zillow ZORI"],
+        "rent_as_of": ["2026-09-30", "2026-09-30"],
+    })
+
+    eligible = filter_by_budget(areas, 1500)
+    assert eligible["zip"].tolist() == ["90000"]
+    result = rank_areas(eligible, np.array([1.0]), ["transit"], ["transit"], 1)[0]
+    assert result["budget_rent_usd"] == result["zori_rent_usd"] == 1500
 
 if __name__ == "__main__":
     tests = [

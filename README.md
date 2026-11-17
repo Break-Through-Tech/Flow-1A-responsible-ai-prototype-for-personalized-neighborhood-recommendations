@@ -79,7 +79,7 @@ A three-layer system:
 | `schema` | Column definitions for all datasets |
 | `recommend` | Ranked ZIPs for a given preference profile |
 | `area_stats` | Public stats for a ZIP or all ZIPs |
-| `crowd_themes` | Review theme snippets for a ZIP |
+| `crowd_themes` | Review theme snippets for a ZIP, plus themes read from the text with a for/against/mentions stance |
 | `ethics` | Fair-use rules and prohibited uses |
 
 See `MCP_SETUP.md` for the full contract.
@@ -109,7 +109,28 @@ You don't normally start the server by hand. An MCP client launches it. To conne
 }
 ```
 
-Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. Top-coded ACS medians (rent `3501` = more than $3,500, home value `2000001` = more than $2,000,000) are kept but listed under `top_coded` with their floor, in both `area_stats` and `recommend`. `ethics` currently returns the README non-negotiables as placeholder rules until Task #18 replaces them.
+Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. Top-coded ACS medians (rent `3501` = more than $3,500, home value `2000001` = more than $2,000,000) are kept and explained by `area_stats`; top-coded ACS rent is excluded from recommendation bounds because it is not an exact estimate. `ethics` currently returns the README non-negotiables as placeholder rules until Task #18 replaces them.
+
+### Tool JSON contracts
+
+`scripts/tool_contracts.py` holds a JSON Schema for every tool's input and output. The server publishes them as each tool's `inputSchema` and `outputSchema` and checks every call against them:
+
+```bash
+python scripts/tool_contracts.py          # print every schema
+python scripts/test_tool_contracts.py     # well-formed, malformed, empty and no-match calls
+```
+
+| Case | What the tool returns |
+|------|-----------------------|
+| Arguments break the input schema (missing field, wrong type, unknown tag or theme, bad ZIP, `budget_max <= 0`, `k` outside 1–10) | `{"status": "invalid_input", "error": "...", "errors": [{"field", "message"}]}`, never a free-text SDK error |
+| Arguments are well-formed but unusable (only unscored tags such as `walkable`) | `invalid_input` from the tool itself |
+| Nothing matches | `not_found` (`area_stats`), `no_snippets` (`crowd_themes`) or `no_areas_within_budget` (`recommend`), with an empty list |
+| The tool's result breaks its output schema | `{"status": "contract_violation", ...}` in place of the result, so the agent never sees unchecked data |
+| The tool itself raises an error | `{"status": "tool_error", "tool", "error"}` instead of an SDK error |
+
+Arguments a tool doesn't declare are dropped by the MCP SDK before the contract sees them, so they are ignored rather than rejected.
+
+Every `recommend` match carries whole-dollar `rent_lower_usd` and `rent_upper_usd` values, the usable ACS/ZORI source values and metadata, `rent_basis`, `budget_position`, and `ranking_reasons` built only from the recommender's own numbers. `within_budget` explains the lower-bound eligibility threshold without calling it an ACS median; `selected_feature` and `unselected_feature` explain similarity. Eligibility is calculated from the unrounded source values before the user-facing amounts are rounded. A disclaimer states that the range is not a guaranteed market bound or an available listing.
 
 ---
 
@@ -156,12 +177,16 @@ Use these metrics from day one — not just at the end. They're your GPS, not yo
 
 | Layer | Metric | Baseline (Sep) | Final (Nov) | Pass? |
 |-------|--------|----------------|-------------|-------|
-| Rec engine | Precision@3 | | | |
-| Rec engine | Mean cosine similarity | | | |
-| MCP | Tool selection accuracy | | | |
-| LLM | Tool grounding rate | | | |
-| LLM | Refusal rate | | | |
-| NLP | Theme coverage | | | |
+| Rec engine | Precision@3 | 0.283 (ceiling 0.867) | | |
+| Rec engine | Precision@5 | 0.200 (ceiling 0.520) | | |
+| Rec engine | Mean cosine similarity | 0.810 | | |
+| Rec engine | Budget filter pass rate | 100% (20/20) | | |
+| MCP | Tool selection accuracy | Not built yet (October) | | |
+| LLM | Tool grounding rate | Not built yet (October) | | |
+| LLM | Refusal rate | Not built yet (October) | | |
+| NLP | Theme coverage | Not built yet (Task #14, PR #45) | | |
+
+Baseline recorded for Task #10 from the Task #6 recommender, run on commit [`b6a4dfd`](https://github.com/Break-Through-Tech/Flow-1A-responsible-ai-prototype-for-personalized-neighborhood-recommendations/commit/b6a4dfd) of `main`. See [Baseline results](#baseline-results-task-10) for how to reproduce it and what the numbers mean.
 
 ---
 
@@ -219,6 +244,37 @@ Use these metrics from day one — not just at the end. They're your GPS, not yo
 ---
 
 ## Results *(your team fills this in)*
+
+### Baseline results (Task #10)
+
+Baseline recommender from Task #6: hard budget filter (ZIPs with suppressed rent excluded), then cosine similarity over `transit`, `social`, `quiet` (+ `co_living_friendly` for co-living). Scored on all 20 profiles in `eval/recommendation_profiles.json` (Task #9), top 5 per profile, so the November final can be scored on the same set.
+
+Numbers are from commit [`b6a4dfd`](https://github.com/Break-Through-Tech/Flow-1A-responsible-ai-prototype-for-personalized-neighborhood-recommendations/commit/b6a4dfd), which includes the live Census ACS data from Task #11 and the 20 profiles from Task #9. The commit is also stored under `run` in `eval/results/baseline_sep.json`. Reproduce from the repo root:
+
+```bash
+python eval/run_eval.py --json eval/results/baseline_sep.json   # Precision@k, cosine, budget pass rate
+```
+
+| Profile | P@3 | P@5 | Mean cosine | Top 5 returned |
+|---------|-----|-----|-------------|----------------|
+| P1 couple, own apt, transit + walkable | 0.00 | 0.00 | 0.709 | Little Haiti, Little Havana, 33054, 33030, 33010 |
+| P2 solo, own apt, social + walkable | 0.00 | 0.00 | 0.725 | 33015, 33012, 33033, Palmetto Bay, 33032 |
+| P3 solo, co-living, transit | 0.67 | 0.40 | 0.722 | **Brickell**, Wynwood, **Downtown**, Allapattah, Riverside |
+| P4 couple, own apt, quiet + pets | 0.00 | 0.00 | 0.807 | West Kendall, Sweetwater, Mid-Beach, 33035, Cutler Bay |
+| P5 couple, own apt, transit + social | 0.00 | 0.00 | 0.908 | 33012, Palmetto Bay, 33033, Allapattah, 33015 |
+
+The table shows the original five profiles (P1–P5); the headline numbers above cover all 20, and `eval/results/baseline_sep.json` has every profile. Bold marks an expected relevant ZIP. ZIPs shown as a bare number are listed as `ZCTA5 xxxxx` in the data, with no neighborhood name yet.
+
+**What the baseline shows**
+
+- **The budget filter is correct.** Every returned ZIP is within budget in all 20 profiles. P12 ($1,000) correctly returns nothing, since no ZIP is that cheap.
+- **Ranking is weak.** Half the profiles (10 of 20) get no expected ZIP into the top 3, and only 4 (P3, P6, P10, P20) reach their P@3 ceiling. Precision is about a third of what these profiles allow (33% at P@3, 38% at P@5): some list fewer than 3 relevant ZIPs and P12 lists none, so P@3 tops out at 0.867 and P@5 at 0.520, not 1.0.
+- **Cosine ranks how concentrated a ZIP is on the chosen features, not how strong it is on them.** The anchors score high on transit, social *and* quiet, so a user who picks one feature is matched to ZIPs that are high on it and low on everything else. In P4 (quiet), Downtown has the second-highest quiet score of the 60 candidates (0.94) but ranks 32nd, while West Kendall (0.86) ranks 1st because it is low on transit and social. Unselected features still count toward a ZIP's vector length.
+- **Mean cosine looks high (0.81) but does not track quality.** It measures closeness to the user vector, not whether the right ZIPs were returned.
+- **`walkable` and `pet_friendly` are not scored** because their data is unusable (Task #4), so P1, P2, P4 and P19 lose part of what the user asked for.
+- **The expected ZIPs for P6–P20 were chosen from the same feature scores the engine ranks on** (Task #9 notes they are dataset-based and not yet confirmed by the advisor). Precision on those profiles measures agreement with the feature scores, not real-world fit, so a gain from a scoring change should be read with that in mind.
+
+**Priorities for October:** score only the selected features (or use a weighted sum) so strong all-round ZIPs are not penalized, rebuild `walkable` and `pet_friendly` from real data, and replace the demo crowd text with a real review corpus (Task #13). Theme coverage is measured in Task #14.
 
 ---
 

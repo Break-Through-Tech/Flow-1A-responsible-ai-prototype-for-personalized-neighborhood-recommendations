@@ -30,6 +30,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from scripts.feature_schema import ID_COLUMN, TAG_TO_COLUMN
+from scripts.pull_census import TOP_CODES
 from scripts.recommender import recommend
 
 PROFILES_PATH = _ROOT / "eval" / "recommendation_profiles.json"
@@ -110,7 +111,7 @@ def load_reference(area_path: Path,public_path: Path,snapshot_path: Path | None 
         acs.notna()
         & acs.map(math.isfinite)
         & acs.gt(0)
-        & acs.ne(3501)
+        & acs.ne(TOP_CODES["B25064_001E"])
     )
     for flag in ("median_rent_usd_suppressed", "median_rent_usd_missing"):
         if flag in joined:
@@ -258,13 +259,13 @@ def evaluate_profile(profile: dict, ref: pd.DataFrame, top_k: int, data_path: Pa
         if true_rent is None:
             row["budget_violations"].append({"zip": z, "rent": None, "reason": "zip not in reference data"})
         elif (
-    not math.isfinite(true_rent)
-    or true_rent <= 0
-    or bool(ref.at[z, "rent_unavailable"])
-    or true_rent > budget
-):
+            not math.isfinite(true_rent)
+            or true_rent <= 0
+            or bool(ref.at[z, "rent_unavailable"])
+            or true_rent > budget
+        ):
             row["budget_violations"].append({"zip": z, "rent": true_rent, "budget": budget})
-        if true_rent is not None and abs(true_rent - r["budget_rent_usd"]) > 1e-9:
+        if true_rent is not None and round(true_rent) != r["budget_rent_usd"]:
             row["rent_echo_mismatches"].append(
                 {"zip": z, "engine": r["budget_rent_usd"], "reference": true_rent}
             )

@@ -10,6 +10,10 @@ _ROOT = Path(__file__).resolve().parents[1]  # project folder one level up
 if str(_ROOT) not in sys.path:  # if Python cannot see the project yet
     sys.path.insert(0, str(_ROOT))  # add the project folder so imports work
 
+from scripts.co_leaser_guardrail import (  # household and housing type stay independent
+    VALID_HOUSEHOLDS,  # only copy of the allowed household values
+    validate_household_housing,  # checks each input and returns both unchanged
+)
 from scripts.feature_schema import (  # use Task #5 instead of copying it
     BUDGET_COLUMN,  # rent column used for the hard budget filter
     CONDITIONAL_FEATURES,  # extra features that only apply to some housing types
@@ -20,10 +24,10 @@ from scripts.feature_schema import (  # use Task #5 instead of copying it
     get_vector_features,  # full list of features used in cosine similarity
     validate_feature_schema,  # checks that the ZIP table looks right
 )
+from scripts.pull_census import TOP_CODES
 
 _DATA_PATH = _ROOT / "data" / "area_features_clean.csv"  # cleaned ZIP data file
 _REQUIRED_KEYS = ("household", "housing_preference", "budget_max", "tags")
-VALID_HOUSEHOLDS = {"alone", "with_co_leaser"}
 DEFAULT_TOP_K = 5
 
 def add_rent_bounds(df: pd.DataFrame) -> pd.DataFrame:
@@ -38,8 +42,8 @@ def add_rent_bounds(df: pd.DataFrame) -> pd.DataFrame:
         if flag in df:
             acs_valid &= ~df[flag].fillna(True).astype(bool)
 
-    # 3501 represents "$3,500 or more", not an exact ACS estimate.
-    acs_valid &= acs.ne(3501)
+    # ACS top codes represent open-ended intervals, not exact estimates.
+    acs_valid &= acs.ne(TOP_CODES["B25064_001E"])
 
     zori_valid = zori.notna() & np.isfinite(zori) & zori.gt(0)
 
@@ -58,15 +62,16 @@ def add_rent_bounds(df: pd.DataFrame) -> pd.DataFrame:
         default="unavailable",
     )
     return df
-
-
-def load_area_features(path: str | Path | None = None,snapshot_path: str | Path | None = None) -> pd.DataFrame:
+def load_area_features(
+    path: str | Path | None = None,
+    snapshot_path: str | Path | None = None,
+) -> pd.DataFrame:
     """Load area features and attach the dated Zillow rent snapshot."""
     area_path = Path(path or _DATA_PATH)
     df = pd.read_csv(area_path, dtype={ID_COLUMN: str})
     validate_feature_schema(df)
 
-    snapshot_path = snapshot_path = snapshot_path or _ROOT / "data" / "zillow_rent_snapshot.csv"
+    snapshot_path = snapshot_path or _ROOT / "data" / "zillow_rent_snapshot.csv"
     snapshot = pd.read_csv(snapshot_path, dtype={"zip": str})
 
     required = {
@@ -117,9 +122,10 @@ def _unscored_tags(tags: list[str], housing_preference: str) -> list[str]:
 def validate_profile(profile: dict, top_k: int = DEFAULT_TOP_K) -> dict:
     """Validate a user profile and resolve the Task #5 feature lists.
 
-    Duplicate tags collapse to one. Unknown tags and housing preferences
-    raise through Task #5. No scored preference raises here: cosine
-    similarity is undefined for a zero user vector.
+    Household and housing preference are checked together and returned
+    unchanged. Duplicate tags collapse to one. Unknown tags raise through
+    Task #5. No scored preference raises here: cosine similarity is
+    undefined for a zero user vector.
     """
     if not isinstance(profile, dict):  # profile must be a dictionary
         raise ValueError("profile must be a dict")  # stop if it is not
@@ -128,9 +134,10 @@ def validate_profile(profile: dict, top_k: int = DEFAULT_TOP_K) -> dict:
     if missing:
         raise ValueError(f"Profile missing keys: {missing}")  # stop and name the missing fields
 
-    household = profile["household"]  # who the user lives with
-    if household not in VALID_HOUSEHOLDS:  # only two household values are allowed
-        raise ValueError(f"Unknown household: {household}")  # stop if the value is unknown
+    # Check household and housing type separately. Neither value is rewritten.
+    household, housing_preference = validate_household_housing(
+        profile["household"], profile["housing_preference"]
+    )
 
     budget_max = profile["budget_max"]  # max rent the user will pay
     if (
@@ -146,7 +153,6 @@ def validate_profile(profile: dict, top_k: int = DEFAULT_TOP_K) -> dict:
         raise ValueError("tags must be a list of strings")
     tags = list(dict.fromkeys(tags))
 
-    housing_preference = profile["housing_preference"]  # own apartment or co-living
     vector_features = get_vector_features(housing_preference)  # full cosine vector from Task #5
     active_features = get_active_features(tags, housing_preference)  # scored tags the user picked
     outside = [feature for feature in active_features if feature not in vector_features]  # active features that do not belong
@@ -269,16 +275,18 @@ def rank_areas(
                 "rank": rank,  # 1 is the best match
                 "zip": zips[i],  # ZIP code
                 "area_name": "" if pd.isna(area_name) else str(area_name),  # name, or blank if missing
-                                "budget_rent_usd": float(row["rent_lower_usd"]),
-                "rent_lower_usd": float(row["rent_lower_usd"]),
-                "rent_upper_usd": float(row["rent_upper_usd"]),
+                # Filtering above uses the unrounded source values. Rounding is
+                # only for this user-facing output contract.
+                "budget_rent_usd": int(round(row["rent_lower_usd"])),
+                "rent_lower_usd": int(round(row["rent_lower_usd"])),
+                "rent_upper_usd": int(round(row["rent_upper_usd"])),
                 "acs_rent_estimate_usd": (
-                    float(row["acs_rent_estimate_usd"])
+                    int(round(row["acs_rent_estimate_usd"]))
                     if pd.notna(row["acs_rent_estimate_usd"])
                     else None
                 ),
                 "zori_rent_usd": (
-                    float(row["zori_rent_usd"])
+                    int(round(row["zori_rent_usd"]))
                     if pd.notna(row["zori_rent_usd"])
                     else None
                 ),

@@ -12,8 +12,8 @@ Think of it like a waiter who can only bring items from the kitchen menu. If it'
 |------|--------------|---------------|
 | `schema` | Nothing | Column names and notes about each dataset |
 | `area_stats` | A ZIP code (optional) | Public stats for that ZIP, or all ZIPs if blank |
-| `crowd_themes` | A ZIP code | Review theme snippets (transit, quiet, social, etc.) |
-| `recommend` | Budget, tags, `household`, `housing_preference`, `k` | Top neighborhood matches as structured JSON |
+| `crowd_themes` | A ZIP code | Review theme snippets (transit, quiet, social, etc.), plus `extracted`: themes read from the review text with a for/against/mentions stance and the quoted review |
+| `recommend` | Budget, tags, `household`, `housing_preference`, `k` | Top neighborhood matches with whole-dollar rent bounds, usable source metadata, rent basis, budget position, and ranking reasons |
 | `ethics` | Nothing | Rules for fair, responsible use |
 
 ---
@@ -24,6 +24,8 @@ Every tool must:
 - Return **structured JSON** — not natural language
 - Only surface data that exists in your dataset — never generate or infer values
 - Be callable independently so it can be tested without the LLM
+- Keep the rent-range contract: do not relabel the combined lower-bound
+  eligibility threshold as an ACS median
 
 The LLM must:
 - Only answer using what the tools return
