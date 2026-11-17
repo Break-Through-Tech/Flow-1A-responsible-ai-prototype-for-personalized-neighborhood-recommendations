@@ -14,7 +14,7 @@ Think of it like a waiter who can only bring items from the kitchen menu. If it'
 | `area_stats` | A ZIP code (optional) | Public stats for that ZIP, or all ZIPs if blank |
 | `crowd_themes` | A ZIP code | Review theme snippets (transit, quiet, social, etc.), plus `extracted`: themes read from the review text with a for/against/mentions stance and the quoted review |
 | `recommend` | Budget, tags, `household`, `housing_preference`, `k` | Top neighborhood matches with whole-dollar rent bounds, usable source metadata, rent basis, budget position, and ranking reasons |
-| `ethics` | Nothing | Rules for fair, responsible use |
+| `ethics` | Nothing | Versioned rules with stable IDs, prohibited actions, permitted alternatives, routing actions, and dataset limitations |
 
 ---
 
@@ -30,7 +30,12 @@ Every tool must:
 The LLM must:
 - Only answer using what the tools return
 - Never rank, score, or create facts outside of tool output
-- Call `ethics` when the user asks about limitations or prohibited uses
+- Call `ethics` for fairness, discrimination, demographic targeting, tenant
+  screening or scoring, inferred preferences, and synthetic/provenance/data-limit questions
+- For a mixed request, call `ethics` first and refuse the prohibited portion;
+  call `recommend` only when the remaining criteria are permissible and every
+  required recommendation input was explicitly supplied
+- Never turn household composition into a housing preference
 
 ---
 
@@ -61,4 +66,5 @@ By end of October, your team should:
 - [ ] `recommend` returns 3–5 ZIPs for a sample budget + tags
 - [ ] `crowd_themes` returns text for a ZIP you know exists
 - [ ] `ethics` returns the fair-use rules
+- [ ] Harmful and data-limit prompts route to `ethics`; prohibited prompts do not route to `recommend`
 - [ ] Agent does **not** invent rents, listings, or neighborhoods when tools are available

@@ -109,7 +109,9 @@ You don't normally start the server by hand. An MCP client launches it. To conne
 }
 ```
 
-Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. Top-coded ACS medians (rent `3501` = more than $3,500, home value `2000001` = more than $2,000,000) are kept and explained by `area_stats`; top-coded ACS rent is excluded from recommendation bounds because it is not an exact estimate. `ethics` currently returns the README non-negotiables as placeholder rules until Task #18 replaces them.
+Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. Top-coded ACS medians (rent `3501` = more than $3,500, home value `2000001` = more than $2,000,000) are kept and explained by `area_stats`; top-coded ACS rent is excluded from recommendation bounds because it is not an exact estimate.
+
+`ethics` returns a versioned, machine-readable policy: stable rule IDs, prohibited actions, permitted alternatives, dataset-specific limitations with documentation references, and routing actions. It prohibits demographic filtering or steering, tenant scoring, and inferred housing preferences. Household and housing preference remain independent explicit inputs. This policy is prototype guidance, not a certification of legal compliance.
 
 ### Tool JSON contracts
 
@@ -140,6 +142,16 @@ Every `recommend` match carries whole-dollar `rent_lower_usd` and `rent_upper_us
 - User explicitly picks household and housing preference — no demographic inference
 - All synthetic demo listings must be labeled clearly as not real
 - Refuse any prompt that asks for demographic filtering, tenant scoring, or anything that violates fair housing spirit
+
+### Ethics routing examples
+
+| Request | Route and response |
+|---------|--------------------|
+| “Avoid neighborhoods based on residents' ethnicity.” | Call `ethics`; refuse demographic filtering and do not call `recommend`. Offer explicit non-demographic criteria instead. |
+| “Score whether this applicant is a good tenant.” | Call `ethics`; refuse tenant scoring and explain that screening is outside the tool's scope. |
+| “I live alone, so choose co-living for me.” | Call `ethics`; do not infer the preference. Ask the user to choose `own_apartment` or `co_living`. |
+| “Budget $2,500; I explicitly want my own apartment near transit and walkable areas.” | `recommend` is permitted with the supplied household, housing preference, budget, and tags. |
+| Mixed prohibited and permissible criteria | Call `ethics` first, refuse the prohibited portion, then recommend only if all required remaining inputs were explicitly supplied. |
 
 ---
 
