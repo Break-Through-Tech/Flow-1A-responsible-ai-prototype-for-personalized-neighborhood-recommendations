@@ -164,8 +164,12 @@ def test_every_recommendation_explains_its_rank_from_the_data():
             reasons = rec["ranking_reasons"]
             budget = reasons[0]
             assert budget["code"] == "within_budget"
-            assert budget["median_rent_usd"] == rec["median_rent_usd"] <= profile["budget_max"]
-            assert budget["headroom_usd"] == profile["budget_max"] - rec["median_rent_usd"]
+            assert budget["budget_rent_usd"] == rec["budget_rent_usd"] <= profile["budget_max"]
+            assert budget["rent_lower_usd"] == rec["rent_lower_usd"]
+            assert budget["rent_upper_usd"] == rec["rent_upper_usd"]
+            assert budget["rent_basis"] == rec["rent_basis"]
+            assert budget["budget_position"] == rec["budget_position"]
+            assert budget["headroom_usd"] == round(profile["budget_max"] - rec["budget_rent_usd"])
             by_feature = {r["feature"]: r for r in reasons[1:]}
             assert list(by_feature) == result["vector_features"]
             for feature, reason in by_feature.items():
@@ -182,18 +186,17 @@ def test_recommend_is_ranked_by_similarity_with_zip_tiebreak():
     assert keys == sorted(keys)
 
 
-def test_top_coded_rent_is_flagged_in_the_reasons_and_summary():
+def test_top_coded_acs_is_not_presented_as_the_rent_threshold():
     recs = t.recommend(**{**PROFILE, "budget_max": 5000}, k=80)["recommendations"]
-    capped = [r for r in recs if r["top_coded"]]
-    assert capped, "expected at least one ZIP with the ACS rent top code"
+    capped = [r for r in recs if r["zip"] in {"33149", "33158"}]
     for rec in recs:
         assert c.validate_output("recommend", {**t.recommend(**{**PROFILE, "budget_max": 5000}, k=1),
                                                "recommendations": [rec]}) == []
-        budget = rec["ranking_reasons"][0]
-        assert budget["rent_is_top_coded"] is (rec["top_coded"] is not None)
     for rec in capped:
-        assert "more than $3,500" in rec["summary"] and "may exceed" in rec["summary"]
-        assert "$3,501" not in rec["summary"]
+        assert rec["rent_basis"] == "zori_only"
+        assert "acs" not in rec["rent_sources"]
+        assert "median rent" not in rec["summary"].lower()
+    assert not capped  # current Zillow snapshot has no usable fallback for either ZIP
 
 
 def test_fewer_candidates_than_k_returns_all_of_them():

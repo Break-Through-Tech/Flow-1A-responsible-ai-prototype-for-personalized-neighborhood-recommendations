@@ -92,7 +92,9 @@ Task #5 defines which columns are used for similarity, how the selected features
 
 The baseline uses `transit`, `social`, and `quiet` as similarity features. `co_living_friendly` is added only when the user selects `co_living`.
 
-Budget is handled separately as a hard filter using `median_rent_usd`; it is not part of the similarity vector.
+Budget is handled separately from similarity. The recommender combines usable
+ACS and Zillow ZORI estimates into a reference range and filters on the exact,
+unrounded lower estimate; rent is not part of the similarity vector.
 
 Task #4 found that the current `walkable` and `pet_friendly` columns do not provide usable baseline signals, so those preferences remain recognized but are not scored.
 

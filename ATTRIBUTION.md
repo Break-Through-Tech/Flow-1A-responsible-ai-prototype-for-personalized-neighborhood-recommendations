@@ -60,6 +60,23 @@ That repository is explicitly an **independent demo by Karla Reyes**, profession
 
 ---
 
+## Zillow Research rent data
+
+The rent reference snapshot uses the **Zillow Observed Rent Index (ZORI)**,
+ZIP-level, all homes plus multifamily, smoothed series, downloaded from
+[Zillow Research housing data](https://www.zillow.com/research/data/). The exact
+download URL, retrieval date, observation date, and SHA-256 checksum are kept in
+`data/zillow_rent_snapshot.metadata.json`.
+
+**Data Provided by Zillow Group.** Zillow describes ZORI as a smoothed,
+dollar-denominated measure of typical observed market-rate rent; it is not a
+listing feed or a guarantee that a home is available at the reported value.
+Zillow's Terms of Use require Zillow Group to be cited as the source wherever
+permitted aggregate data or derivative displays are shown, without using Zillow
+logos or implying endorsement or affiliation.
+
+---
+
 ## For students
 
 Build your implementation in this repo for AI Studio. Document **your** work in your README. The concept and CA setup were provided by your Challenge Advisor; **your code and results are yours** for portfolio purposes per BTT guidelines.

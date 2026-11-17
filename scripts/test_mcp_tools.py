@@ -107,15 +107,16 @@ def test_area_stats_marks_top_coded_medians_as_floors():
     assert t.area_stats("33127")["areas"][0]["top_coded"] == []
 
 
-def test_recommend_marks_a_top_coded_rent():
+def test_recommend_excludes_top_coded_acs_from_rent_sources():
     out = t.recommend(**{**PROFILE, "budget_max": 5000}, k=80)
     recs = out["recommendations"]
-    assert any(r["median_rent_usd"] == 3501 for r in recs)
-    for r in recs:
-        if r["median_rent_usd"] == 3501:
-            assert r["top_coded"]["floor"] == 3500
-        else:
-            assert r["top_coded"] is None
+    top_coded_zips = {"33149", "33158"}
+    found = [r for r in recs if r["zip"] in top_coded_zips]
+    assert all("acs" not in r["rent_sources"] for r in found)
+    assert all(r["rent_basis"] == "zori_only" for r in found)
+    # In the current snapshot neither ZIP has usable ZORI, so both are
+    # excluded rather than treating the ACS top code as an exact threshold.
+    assert not found
 
 
 def test_crowd_themes_returns_text_for_a_known_zip_and_filters_by_theme():
@@ -176,7 +177,9 @@ def test_recommend_returns_three_to_five_zips_within_budget():
         out = t.recommend(**PROFILE, k=k)
         recs = out["recommendations"]
         assert len(recs) == k
-        assert all(r["median_rent_usd"] <= PROFILE["budget_max"] for r in recs)
+        assert all(r["budget_rent_usd"] <= PROFILE["budget_max"] for r in recs)
+        assert all(r["rent_lower_usd"] <= r["rent_upper_usd"] for r in recs)
+        assert all(r["rent_sources"] and r["budget_position"] for r in recs)
 
 
 def test_recommend_reports_bad_input_instead_of_raising():
