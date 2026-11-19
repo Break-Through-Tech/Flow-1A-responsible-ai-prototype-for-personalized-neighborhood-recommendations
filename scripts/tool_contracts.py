@@ -403,12 +403,49 @@ OUTPUT_SCHEMAS: dict[str, dict] = {
         _variant(
             "ok",
             {
-                "principles": {**_STRINGS, "minItems": 1},
-                "prohibited_uses": {**_STRINGS, "minItems": 1},
-                "data_limitations": {**_STRINGS, "minItems": 1},
-                "when_to_refuse": {"type": "string", "minLength": 1},
+                "policy_version": {"type": "string", "minLength": 1},
+                "scope": {"type": "string", "minLength": 1},
+                "rules": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+                            "title": {"type": "string", "minLength": 1},
+                            "prohibited_actions": {**_STRINGS, "minItems": 1},
+                            "permitted_alternatives": {**_STRINGS, "minItems": 1},
+                        },
+                        "required": ["id", "title", "prohibited_actions", "permitted_alternatives"],
+                        "additionalProperties": False,
+                    },
+                },
+                "data_limitations": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+                            "description": {"type": "string", "minLength": 1},
+                            "references": {**_STRINGS, "minItems": 1},
+                        },
+                        "required": ["id", "description", "references"],
+                        "additionalProperties": False,
+                    },
+                },
+                "routing": {
+                    "type": "object",
+                    "properties": {
+                        "call_ethics_for": {**_STRINGS, "minItems": 1},
+                        "prohibited_request_action": {"type": "string", "minLength": 1},
+                        "mixed_request_action": {"type": "string", "minLength": 1},
+                    },
+                    "required": ["call_ethics_for", "prohibited_request_action", "mixed_request_action"],
+                    "additionalProperties": False,
+                },
             },
-            ["principles", "prohibited_uses", "data_limitations", "when_to_refuse"],
+            ["policy_version", "scope", "rules", "data_limitations", "routing"],
         ),
     ),
 }
