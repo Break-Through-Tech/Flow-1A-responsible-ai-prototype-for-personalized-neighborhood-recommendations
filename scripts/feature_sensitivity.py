@@ -4,6 +4,8 @@
 import json
 from pathlib import Path
 
+from scripts.feature_schema import BASE_FEATURES, CONDITIONAL_FEATURES
+
 from scripts.recommender import (
     build_area_matrix,
     build_user_vector,
@@ -18,8 +20,11 @@ from scripts.recommender import (
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILES_PATH = ROOT / "eval" / "recommendation_profiles.json"
-FEATURES = ["transit", "social", "quiet", "co_living_friendly"]
+FEATURES = BASE_FEATURES + list(CONDITIONAL_FEATURES.values())
 
+def count_overlap(original_zips, changed_zips):
+    """Count ZIP codes that appear in both recommendation lists."""
+    return len(set(original_zips) & set(changed_zips))
 
 def get_ranked_zips(candidates, vector_features, active_features, top_k):
     """Rank ZIPs using the given feature set."""
@@ -98,7 +103,7 @@ def analyze_profile(profile, areas):
             )
 
             result["same_order"] = original_zips == changed_zips
-            result["overlap"] = len(set(original_zips) & set(changed_zips))
+            result["overlap"] = count_overlap(original_zips, changed_zips)
             result["original_count"] = len(original_zips)
 
         results.append(result)
@@ -164,7 +169,6 @@ def main():
                 print(f"  {status}: {count}")
 
         print()
-
 
 if __name__ == "__main__":
     main()

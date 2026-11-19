@@ -40,7 +40,7 @@ The current implementation includes the following safeguards:
 - Co-living suitability is included only when co-living is selected.
 - Budget filtering is separate from similarity scoring.
 - Unreliable and unsupported lifestyle features are excluded from scoring.
-- The MCP ethics tool contains rules against demographic filtering, demographic steering, and tenant scoring.
+- The MCP ethics tool defines rules against demographic filtering, demographic steering, and tenant scoring. Enforcement by the LLM agent requires separate verification.
 
 These safeguards reduce some risks but do not establish that the recommendation system is free from demographic bias.
 
@@ -170,8 +170,8 @@ The following checks were completed:
 |---|---|
 | Household comparison tests | 4 passed |
 | Excluded-feature test | 1 passed |
-| Sensitivity-analysis tests | 5 passed |
-| Full project test suite | 95 passed |
+| Sensitivity-analysis tests | 6 passed |
+| Full project test suite | 96 passed |
 | Baseline evaluation profiles | 20 completed |
 | Budget filter pass rate | 100% |
 
@@ -192,6 +192,8 @@ Based on the current implementation and testing:
 - Keep identifiers and data-quality fields outside similarity scoring.
 - Document the influence of unselected features and the limitations of fixed-dimensional cosine similarity.
 - Validate feature sources and possible demographic impacts before considering real-world deployment.
+
+The scored lifestyle features are retained for the current prototype because they represent supported user preferences and are already part of the baseline recommender. However, their original construction is not fully documented, and the sensitivity analysis shows that even unselected features can influence rankings. These findings support further validation before deployment rather than treating the current feature set as fully verified.
 
 No additional feature removal is proposed for the current prototype. The available tests identify ranking sensitivity but do not establish whether retained features create discriminatory outcomes.
 

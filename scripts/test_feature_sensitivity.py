@@ -8,14 +8,18 @@ from scripts.feature_sensitivity import (
     PROFILES_PATH,
     analyze,
     analyze_profile,
+    count_overlap,
     get_ranked_zips,
 )
+
 from scripts.recommender import (
     filter_by_budget,
     load_area_features,
     recommend,
     validate_profile,
 )
+
+
 
 
 def load_profiles():
@@ -95,19 +99,25 @@ def test_no_budget_match_is_handled():
 
 
 def test_co_living_feature_is_conditional():
-    """Check that co-living is only used for co-living profiles."""
+    """Check that co-living only affects co-living profiles."""
     areas = load_area_features()
-    profiles = load_profiles()
 
-    own_profile = next(
-        p for p in profiles
-        if p["housing_preference"] == "own_apartment"
-    )
+    base_profile = {
+        "profile_id": "housing_test",
+        "household": "alone",
+        "budget_max": 2500,
+        "tags": ["transit", "quiet"],
+    }
 
-    co_living_profile = next(
-        p for p in profiles
-        if p["housing_preference"] == "co_living"
-    )
+    own_profile = {
+        **base_profile,
+        "housing_preference": "own_apartment",
+    }
+
+    co_living_profile = {
+        **base_profile,
+        "housing_preference": "co_living",
+    }
 
     own_results = analyze_profile(own_profile, areas)
     co_living_results = analyze_profile(co_living_profile, areas)
@@ -123,9 +133,10 @@ def test_co_living_feature_is_conditional():
     )
 
     assert own_feature["status"] == "not_used"
-    assert co_living_feature["selected"] is True
-    assert co_living_feature["status"] == "ok"
+    assert own_feature["selected"] is False
 
+    assert co_living_feature["status"] == "ok"
+    assert co_living_feature["selected"] is True
 
 def test_unselected_features_can_affect_rankings():
     """Check the known influence of unselected features."""
@@ -143,3 +154,21 @@ def test_unselected_features_can_affect_rankings():
         row["overlap"] < row["original_count"]
         for row in unselected
     )
+
+def test_count_overlap():
+    """Check that overlap counts shared ZIPs, regardless of order."""
+    original = ["33127", "33128", "33130", "33132", "33136"]
+
+    changed = ["33130", "33128", "33137", "33139", "33140"]
+    assert count_overlap(original, changed) == 2
+
+    # Changing only the order should not change membership.
+    reordered = list(reversed(original))
+    assert count_overlap(original, reordered) == 5
+
+    # Lists with no shared ZIPs should have zero overlap.
+    unrelated = ["33010", "33012"]
+    assert count_overlap(original, unrelated) == 0
+
+    # An empty recommendation list has no overlap.
+    assert count_overlap(original, []) == 0
