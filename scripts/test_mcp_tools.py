@@ -190,7 +190,16 @@ def test_recommend_reports_bad_input_instead_of_raising():
 
 def test_ethics_returns_rules():
     out = t.ethics()
-    assert out["principles"] and out["prohibited_uses"]
+    rules = {rule["id"]: rule for rule in out["rules"]}
+    assert {
+        "no_demographic_filtering",
+        "no_tenant_scoring",
+        "no_inferred_housing_preferences",
+        "explicit_preferences_only",
+        "no_listing_or_affordability_guarantees",
+    } <= set(rules)
+    assert all(rule["prohibited_actions"] and rule["permitted_alternatives"] for rule in rules.values())
+    assert out["routing"]["call_ethics_for"]
 
 
 def test_server_registers_the_five_tools_and_returns_structured_output():

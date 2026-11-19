@@ -67,6 +67,14 @@ Coverage asks whether there is crowd text to explain a match, not whether the te
 3. Compare to `expected_tool`
 4. For `recommend`, verify arguments match `expected_args`
 
+Prohibited prompts and questions about synthetic or sampled data route to
+`ethics`. For mixed requests, `ethics` must be called before any recommendation;
+the prohibited portion is refused, and recommendation may continue only from
+permissible criteria and explicitly supplied required inputs. Because this
+repository currently exposes MCP tools but does not include a production LLM
+router, `agent_routing_prompts.json` records the expected observable tool call
+for downstream agent evaluation.
+
 **Routing vs. grounding (don't confuse them):**
 
 | Term | Meaning |
