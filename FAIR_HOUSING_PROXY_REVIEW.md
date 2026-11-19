@@ -44,7 +44,7 @@ The current implementation includes the following safeguards:
 
 These safeguards reduce some risks but do not establish that the recommendation system is free from demographic bias.
 
-The current ethics rules should also be reviewed again when Task #18 is fully integrated.
+Task #18 introduced structured fair-housing rules covering demographic filtering, tenant scoring, inferred housing preferences, and prohibited-request routing. These rules are consistent with this feature review. Their enforcement by the LLM agent requires separate integration testing.
 
 ## 3. Feature Risks and Limitations
 
@@ -171,7 +171,7 @@ The following checks were completed:
 | Household comparison tests | 4 passed |
 | Excluded-feature test | 1 passed |
 | Sensitivity-analysis tests | 6 passed |
-| Full project test suite | 96 passed |
+| Full project test suite | 102 passed |
 | Baseline evaluation profiles | 20 completed |
 | Budget filter pass rate | 100% |
 
