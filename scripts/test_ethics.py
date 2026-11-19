@@ -49,9 +49,31 @@ def test_prohibited_behaviors_and_permitted_explicit_preferences_are_covered():
         item for rule in rules.values() for item in rule["permitted_alternatives"]
     ).lower()
     assert all(word in demographic for word in ("filter", "rank", "steer", "prox"))
+    assert all(
+        characteristic in demographic
+        for characteristic in (
+            "race",
+            "ethnicity",
+            "national origin",
+            "religion",
+            "sex",
+            "familial status",
+            "disability",
+        )
+    )
     assert all(word in scoring for word in ("suitability", "eligibility", "risk", "worthiness"))
     assert all(word in inference for word in ("identity", "name", "language", "household"))
-    assert all(word in alternatives for word in ("budget", "transit", "walkability", "quiet"))
+    assert all(word in alternatives for word in ("budget", "transit", "social", "quiet"))
+    unsupported = [
+        alternative.lower()
+        for rule in rules.values()
+        for alternative in rule["permitted_alternatives"]
+        if "walkability" in alternative.lower() or "pet-friendly" in alternative.lower()
+    ]
+    assert unsupported
+    assert all("not scored" in alternative for alternative in unsupported)
+    assert all("do not offer them as ranking criteria" in alternative for alternative in unsupported)
+    assert "amenit" not in alternatives
 
 
 def test_data_limitations_distinguish_real_sources_from_synthetic_fixtures():

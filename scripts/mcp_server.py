@@ -25,8 +25,9 @@ INSTRUCTIONS = (
     "scoring, inferred housing preferences, and synthetic or data-limit questions. Refuse "
     "prohibited actions and do not call recommend for them. For mixed requests, call ethics "
     "first, refuse the prohibited portion, and continue only with permissible criteria that "
-    "the user supplied explicitly. Household and housing preference are independent; never "
-    "derive one from the other."
+    "the user supplied explicitly and only when all required recommendation inputs are present. "
+    "Ask for missing inputs instead of inferring them. Household and housing preference are "
+    "independent; never derive one from the other."
 )
 
 server = MCPServer("flow1a-neighborhoods", instructions=INSTRUCTIONS)
@@ -98,7 +99,9 @@ def ethics() -> dict[str, Any]:
 
     Call for fairness, discrimination, demographic targeting, tenant screening or scoring,
     inferred housing preferences, and synthetic, sampled, provenance, or data-limit questions.
-    Call this before recommend for mixed requests; never call recommend for a prohibited request.
+    For mixed requests, call this first, refuse the prohibited portion, and call recommend only
+    when every required input is explicitly available; otherwise ask for the missing inputs.
+    Never call recommend for a wholly prohibited request or infer housing preference from household.
     """
     return tool_contracts.call_tool("ethics", mcp_tools.ethics, {})
 

@@ -59,12 +59,23 @@ ETHICS_RULES = {
             "id": "no_demographic_filtering",
             "title": "No demographic filtering or steering",
             "prohibited_actions": [
-                "Filter, rank, exclude, or steer neighborhoods using protected characteristics.",
+                (
+                    "Filter, rank, exclude, or steer neighborhoods using protected characteristics, "
+                    "including race, ethnicity, national origin, religion, sex, familial status, "
+                    "and disability."
+                ),
                 "Use demographic proxies to accomplish demographic targeting or exclusion.",
                 "Recommend an area based on who lives there or who the user should live near or avoid.",
             ],
             "permitted_alternatives": [
-                "Use explicitly supplied, non-demographic criteria such as budget, transit, walkability, quiet, or amenities.",
+                (
+                    "Use an explicitly supplied budget as the hard eligibility filter and explicit "
+                    "transit, social, and quiet preferences as ranking features."
+                ),
+                (
+                    "Walkability and pet-friendly indicators are recognized inputs but are not scored; "
+                    "do not offer them as ranking criteria."
+                ),
                 "Describe available aggregate data without using it to target or exclude people or neighborhoods.",
             ],
         },
@@ -99,7 +110,18 @@ ETHICS_RULES = {
                 "Invent a budget, housing preference, household value, or lifestyle priority.",
             ],
             "permitted_alternatives": [
-                "Use a user-supplied budget and explicit transit, walkability, quiet, social, pet, amenity, and housing preferences.",
+                (
+                    "Use a user-supplied budget as the hard eligibility filter and explicit transit, "
+                    "social, and quiet preferences as ranking features."
+                ),
+                (
+                    "Use the user's explicit housing preference; co_living adds the "
+                    "co_living_friendly ranking feature, while household remains independent."
+                ),
+                (
+                    "Walkability and pet-friendly indicators are recognized inputs but are not scored; "
+                    "do not offer them as ranking criteria."
+                ),
                 "Ask for missing required recommendation inputs instead of inferring them.",
             ],
         },

@@ -150,7 +150,7 @@ Every `recommend` match carries whole-dollar `rent_lower_usd` and `rent_upper_us
 | “Avoid neighborhoods based on residents' ethnicity.” | Call `ethics`; refuse demographic filtering and do not call `recommend`. Offer explicit non-demographic criteria instead. |
 | “Score whether this applicant is a good tenant.” | Call `ethics`; refuse tenant scoring and explain that screening is outside the tool's scope. |
 | “I live alone, so choose co-living for me.” | Call `ethics`; do not infer the preference. Ask the user to choose `own_apartment` or `co_living`. |
-| “Budget $2,500; I explicitly want my own apartment near transit and walkable areas.” | `recommend` is permitted with the supplied household, housing preference, budget, and tags. |
+| “Budget $2,500; I explicitly want my own apartment near transit and quiet areas.” | `recommend` is permitted with the supplied household, housing preference, budget, and scored tags. Walkability and pet-friendly may be accepted as inputs but are not scored. |
 | Mixed prohibited and permissible criteria | Call `ethics` first, refuse the prohibited portion, then recommend only if all required remaining inputs were explicitly supplied. |
 
 ---
