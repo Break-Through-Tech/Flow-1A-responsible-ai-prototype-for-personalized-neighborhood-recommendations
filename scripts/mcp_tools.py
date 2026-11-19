@@ -48,32 +48,171 @@ TOP_CODES = {column: (code, code - 1) for column, code in _CENSUS_TOP_CODES.item
 TOP_CODES["median_rent_usd"] = TOP_CODES["B25064_001E"]
 _ZIP_PATTERN = re.compile(r"^\d{5}$")
 
-# Placeholder rules until Task #18 (issue #30) replaces them with the full
-# fair-housing rule set. Taken from the README non-negotiables and the
-# data_dictionary.md limitations.
 ETHICS_RULES = {
-    "principles": [
-        "Recommend neighborhoods, never score tenants or applicants.",
-        "The user explicitly picks household and housing preference; never infer them from demographics.",
-        "Co-leaser (sharing a private lease) and co-living (shared/stranger roommates) are different; never infer one from the other.",
-        "Only state rents, ZIPs and statistics that a tool returned; never invent listings, rents or neighborhoods.",
-        "Synthetic demo options must be labeled NOT A REAL LISTING wherever they appear.",
-    ],
-    "prohibited_uses": [
-        "Tenant or applicant scoring or screening.",
-        "Filtering or ranking neighborhoods by race, ethnicity, national origin, religion, sex, familial status, disability or any other protected characteristic, or a proxy for one.",
-        "Steering users toward or away from areas based on who lives there.",
-        "Leasing decisions.",
-        "Presenting synthetic demo options as real, available listings.",
+    "policy_version": "task18-v1",
+    "scope": (
+        "Neighborhood recommendation guidance for this prototype; not tenant screening, "
+        "listing search, legal advice, or a certification of fair-housing compliance."
+    ),
+    "rules": [
+        {
+            "id": "no_demographic_filtering",
+            "title": "No demographic filtering or steering",
+            "prohibited_actions": [
+                (
+                    "Filter, rank, exclude, or steer neighborhoods using protected characteristics, "
+                    "including race, ethnicity, national origin, religion, sex, familial status, "
+                    "and disability."
+                ),
+                "Use demographic proxies to accomplish demographic targeting or exclusion.",
+                "Recommend an area based on who lives there or who the user should live near or avoid.",
+            ],
+            "permitted_alternatives": [
+                (
+                    "Use an explicitly supplied budget as the hard eligibility filter and explicit "
+                    "transit, social, and quiet preferences as ranking features."
+                ),
+                (
+                    "Walkability and pet-friendly indicators are recognized inputs but are not scored; "
+                    "do not offer them as ranking criteria."
+                ),
+                "Describe available aggregate data without using it to target or exclude people or neighborhoods.",
+            ],
+        },
+        {
+            "id": "no_tenant_scoring",
+            "title": "No tenant or applicant scoring",
+            "prohibited_actions": [
+                "Evaluate a person's suitability, eligibility, risk, or worthiness as a tenant.",
+                "Generate screening scores, hidden landlord criteria, approval predictions, or leasing decisions.",
+            ],
+            "permitted_alternatives": [
+                "Recommend neighborhoods from the user's explicit preferences.",
+                "Explain that property-specific eligibility and screening are outside this tool's scope.",
+            ],
+        },
+        {
+            "id": "no_inferred_housing_preferences",
+            "title": "Do not infer housing preferences",
+            "prohibited_actions": [
+                "Infer housing preference from identity, name, language, background, household characteristics, or protected characteristics.",
+                "Convert living alone into co-living or having a co-leaser into own-apartment preference.",
+            ],
+            "permitted_alternatives": [
+                "Ask the user to choose own_apartment or co_living explicitly.",
+                "Keep household and housing_preference as independent inputs and return each unchanged.",
+            ],
+        },
+        {
+            "id": "explicit_preferences_only",
+            "title": "Use explicit, relevant preferences",
+            "prohibited_actions": [
+                "Invent a budget, housing preference, household value, or lifestyle priority.",
+            ],
+            "permitted_alternatives": [
+                (
+                    "Use a user-supplied budget as the hard eligibility filter and explicit transit, "
+                    "social, and quiet preferences as ranking features."
+                ),
+                (
+                    "Use the user's explicit housing preference; co_living adds the "
+                    "co_living_friendly ranking feature, while household remains independent."
+                ),
+                (
+                    "Walkability and pet-friendly indicators are recognized inputs but are not scored; "
+                    "do not offer them as ranking criteria."
+                ),
+                "Ask for missing required recommendation inputs instead of inferring them.",
+            ],
+        },
+        {
+            "id": "no_listing_or_affordability_guarantees",
+            "title": "Do not overstate recommendation outputs",
+            "prohibited_actions": [
+                "Present a neighborhood recommendation as tenant screening or a leasing decision.",
+                "Claim that a listing is available or that the user is guaranteed to afford or obtain housing.",
+                "Present synthetic area_options rows as real listings.",
+            ],
+            "permitted_alternatives": [
+                "Describe rent values as area-level reference estimates with their source and period.",
+                "Label listing-style demo rows as NOT A REAL LISTING and direct users to current listing sources for availability.",
+            ],
+        },
     ],
     "data_limitations": [
-        "Snapshot data only, not live market feeds.",
-        "Census suppression codes (-666666666) are handled in preprocessing; area_stats returns those values as null.",
-        "Some ACS medians are top-coded floors (rent 3501 means more than $3,500; home value 2000001 means more than $2,000,000); tools mark these under top_coded.",
-        "Crowd text snippets are demo data until they are replaced with a real review corpus.",
-        "English-only text bias may apply when using real review corpora.",
+        {
+            "id": "real_aggregate_sources",
+            "description": (
+                "The project uses real aggregate sources: 2020-2024 ACS five-year estimates, "
+                "a September 2026 Zillow ZORI snapshot covering 75 of 80 project ZIPs, and "
+                "selected Google Local review excerpts. These sources are not synthetic."
+            ),
+            "references": [
+                "data/area_features_clean.metadata.json",
+                "data/zillow_rent_snapshot.metadata.json",
+                "data_dictionary.md",
+                "ATTRIBUTION.md",
+            ],
+        },
+        {
+            "id": "synthetic_demo_options",
+            "description": (
+                "data/area_options.csv contains synthetic listing-style demo cards, not real "
+                "apartments or evidence of current availability."
+            ),
+            "references": ["data/README.md", "data_dictionary.md"],
+        },
+        {
+            "id": "synthetic_evaluation_profiles",
+            "description": (
+                "eval/recommendation_profiles.json contains test profiles for evaluation. "
+                "They do not establish real-world fairness, representativeness, or performance."
+            ),
+            "references": ["eval/README.md", "EVAL_FRAMEWORK.md"],
+        },
+        {
+            "id": "indicator_limits",
+            "description": (
+                "ZIP-level neighborhood indicators are aggregate or proxy features and cannot "
+                "guarantee an individual's experience; walkability and pet-friendly inputs are "
+                "recognized but are not scored in the current recommender."
+            ),
+            "references": ["FEATURE_SCHEMA.md", "data_dictionary.md"],
+        },
+        {
+            "id": "review_sample_limits",
+            "description": (
+                "The review corpus is a selected, non-representative sample for three anchor ZIPs, "
+                "including some Google-provided translations. It does not represent every resident "
+                "or guarantee an individual's experience."
+            ),
+            "references": ["data_dictionary.md", "data/crowd_text_selection.json"],
+        },
+        {
+            "id": "rent_reference_limits",
+            "description": (
+                "ACS and Zillow values form area-level reference ranges from different measures "
+                "and periods. They are not guaranteed market bounds, current-market affordability, "
+                "property-specific prices, or available listings."
+            ),
+            "references": ["data/zillow_rent_snapshot.metadata.json", "data_dictionary.md"],
+        },
     ],
-    "when_to_refuse": "Refuse any request for demographic filtering, tenant scoring, or anything that violates the spirit of fair housing, and do not call recommend for it.",
+    "routing": {
+        "call_ethics_for": [
+            "fairness, discrimination, fair-housing, or demographic-targeting questions",
+            "tenant or applicant scoring, screening, eligibility, risk, or worthiness requests",
+            "requests to infer housing preferences or use household composition as a substitute",
+            "questions about synthetic, demo, sampled, provenance, or data limitations",
+        ],
+        "prohibited_request_action": (
+            "Call ethics, refuse the prohibited action, offer a permitted alternative, and do not call recommend."
+        ),
+        "mixed_request_action": (
+            "Call ethics first and refuse the prohibited portion. Continue to recommend only when "
+            "the remaining criteria are permissible and the user explicitly supplies every required input."
+        ),
+    },
 }
 
 
@@ -398,7 +537,7 @@ def _summary(rec: dict, result: dict) -> str:
 
 
 def ethics() -> dict:
-    """Fair-use rules, prohibited uses and data limitations."""
+    """Structured fair-housing rules, permitted alternatives, routing, and data limits."""
     return {"status": "ok", **ETHICS_RULES}
 
 

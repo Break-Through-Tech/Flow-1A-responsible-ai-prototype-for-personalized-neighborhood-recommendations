@@ -34,7 +34,7 @@ User preferences flow into a recommendation engine that ranks neighborhoods. Tho
 | `recommend` | User wants area suggestions (budget + household + housing preference + tags) |
 | `area_stats` | User asks about a specific ZIP or area statistics |
 | `crowd_themes` | User asks what people say about a ZIP |
-| `ethics` | User asks about limitations, fair housing, or prohibited uses |
+| `ethics` | User asks about fairness, discrimination, demographic targeting, tenant scoring, inferred preferences, or synthetic/provenance/data limitations |
 
 Setup details: [MCP_SETUP.md](MCP_SETUP.md)
 
