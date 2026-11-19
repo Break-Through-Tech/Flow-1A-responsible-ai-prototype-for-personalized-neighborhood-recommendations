@@ -85,26 +85,34 @@ Some neighborhood review data also has limited coverage, which may affect how ac
 
 ## 4. Fair-Housing Comparison Tests
 
-To check whether household type affects recommendations, we will compare profiles that have the same:
+We tested whether changing household type affects neighborhood recommendations when all other inputs remain the same.
 
-- Budget.
-- Housing preference.
-- Lifestyle preferences.
+The tests compared profiles with identical budgets, housing preferences, and lifestyle preferences. Only the household value changed between `alone` and `with_co_leaser`.
 
-The only difference will be the household input: `alone` or `with_co_leaser`.
+### Test Coverage
 
-The tests will compare:
+| Test | Scenarios | Result |
+|---|---|---|
+| Household comparison across housing preferences | 2 profile pairs | Passed |
+| Household comparison across budgets | 4 profile pairs | Passed |
+| Household comparison across lifestyle preferences | 6 profile pairs | Passed |
+| Household comparison for co-living | 5 profile pairs | Passed |
+| **Total** | **17 profile pairs** | **All passed** |
 
-- Number of eligible neighborhoods.
+The tests verified that changing household type did not affect:
+
+- The number of eligible neighborhoods.
 - Recommendation status.
 - Recommended ZIP code rankings.
-- Similarity scores.
+- Cosine similarity scores.
 
-We expect the results to remain the same when only household type changes.
+**Test results:** All 4 automated tests passed, covering 17 profile pairs.
 
-This test checks that household type does not directly affect recommendation rankings. It does not prove that the underlying neighborhood features are free from demographic bias.
+### Interpretation
 
-**Test status:** Pending execution.
+The results confirm that household type does not affect recommendation rankings in the tested scenarios.
+
+However, these tests do not establish that the underlying neighborhood features are free from demographic proxy risks. Additional validation would be needed to assess possible differences across protected demographic groups.
 
 ## 5. Final Decisions and Recommendations
 
