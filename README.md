@@ -109,7 +109,7 @@ You don't normally start the server by hand. An MCP client launches it. To conne
 }
 ```
 
-Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. Top-coded ACS medians (rent `3501` = more than $3,500, home value `2000001` = more than $2,000,000) are kept but listed under `top_coded` with their floor, in both `area_stats` and `recommend`. `ethics` currently returns the README non-negotiables as placeholder rules until Task #18 replaces them.
+Every tool returns JSON with a `status` field (`ok`, `invalid_input`, `not_found`, `no_snippets`, or `no_areas_within_budget` from `recommend`). `area_stats` returns Census values that were suppressed or missing as `null` and lists them under `unavailable`. It never returns the median that `clean_data.py` imputed, so the agent can't present that as a real statistic. Top-coded ACS medians (rent `3501` = more than $3,500, home value `2000001` = more than $2,000,000) are kept and explained by `area_stats`; top-coded ACS rent is excluded from recommendation bounds because it is not an exact estimate. `ethics` currently returns the README non-negotiables as placeholder rules until Task #18 replaces them.
 
 ### Tool JSON contracts
 
@@ -130,7 +130,7 @@ python scripts/test_tool_contracts.py     # well-formed, malformed, empty and no
 
 Arguments a tool doesn't declare are dropped by the MCP SDK before the contract sees them, so they are ignored rather than rejected.
 
-Every `recommend` match carries `ranking_reasons`, built only from the recommender's own numbers: `within_budget` (rent, budget, headroom), `selected_feature` (the ZIP's score on each feature the user picked) and `unselected_feature` (scores on the other features, which lower cosine similarity). It also has a one-line `summary`, and the result has a `rank_basis` that states how the ranking works. When a rent is the ACS top code (`3501`), `within_budget` has `rent_is_top_coded: true` and the summary says the rent is more than $3,500 and may exceed the budget, rather than quoting $3,501. The agent can explain a match without inventing anything.
+Every `recommend` match carries whole-dollar `rent_lower_usd` and `rent_upper_usd` values, the usable ACS/ZORI source values and metadata, `rent_basis`, `budget_position`, and `ranking_reasons` built only from the recommender's own numbers. `within_budget` explains the lower-bound eligibility threshold without calling it an ACS median; `selected_feature` and `unselected_feature` explain similarity. Eligibility is calculated from the unrounded source values before the user-facing amounts are rounded. A disclaimer states that the range is not a guaranteed market bound or an available listing.
 
 ---
 

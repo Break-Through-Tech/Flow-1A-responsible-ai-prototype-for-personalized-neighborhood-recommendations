@@ -277,12 +277,15 @@ _REASON = {
         {
             "properties": {
                 "code": {"const": "within_budget"},
-                "median_rent_usd": {"type": "number"},
+                "budget_rent_usd": {"type": "integer"},
+                "rent_lower_usd": {"type": "integer"},
+                "rent_upper_usd": {"type": "integer"},
+                "rent_basis": {"enum": ["acs_and_zori", "acs_only", "zori_only"]},
+                "budget_position": {"enum": ["within_reference_range", "above_upper_estimate"]},
                 "budget_max": {"type": "number"},
                 "headroom_usd": {"type": "number", "minimum": 0},
-                "rent_is_top_coded": {"type": "boolean"},
             },
-            "required": ["code", "median_rent_usd", "budget_max", "headroom_usd", "rent_is_top_coded"],
+            "required": ["code", "budget_rent_usd", "rent_lower_usd", "rent_upper_usd", "rent_basis", "budget_position", "budget_max", "headroom_usd"],
         },
         {
             "properties": {
@@ -309,7 +312,16 @@ _RECOMMENDATION = {
         "rank": {"type": "integer", "minimum": 1},
         "zip": _ZIP,
         "area_name": {"type": "string"},
-        "median_rent_usd": {"type": "number"},
+        "budget_rent_usd": {"type": "integer"},
+        "rent_lower_usd": {"type": "integer"},
+        "rent_upper_usd": {"type": "integer"},
+        "acs_rent_estimate_usd": {"type": ["integer", "null"]},
+        "zori_rent_usd": {"type": ["integer", "null"]},
+        "rent_basis": {"enum": ["acs_and_zori", "acs_only", "zori_only"]},
+        "budget_position": {"enum": ["within_reference_range", "above_upper_estimate"]},
+        "rent_sources": {"type": "object", "minProperties": 1},
+        "rent_units": {"const": "USD/month"},
+        "rent_disclaimer": {"type": "string", "minLength": 1},
         "similarity": {"type": "number", "minimum": 0},
         "matched_features": {
             "type": "array",
@@ -320,13 +332,14 @@ _RECOMMENDATION = {
             },
         },
         "feature_scores": {"type": "object", "additionalProperties": _SCORE},
-        "top_coded": {"oneOf": [_TOP_CODED, {"type": "null"}]},
         "ranking_reasons": {"type": "array", "items": _REASON, "minItems": 2},
         "summary": {"type": "string", "minLength": 1},
     },
     "required": [
-        "rank", "zip", "area_name", "median_rent_usd", "similarity",
-        "matched_features", "feature_scores", "top_coded", "ranking_reasons", "summary",
+        "rank", "zip", "area_name", "budget_rent_usd", "rent_lower_usd", "rent_upper_usd",
+        "acs_rent_estimate_usd", "zori_rent_usd", "rent_basis", "budget_position",
+        "rent_sources", "rent_units", "rent_disclaimer", "similarity",
+        "matched_features", "feature_scores", "ranking_reasons", "summary",
     ],
 }
 _RECOMMEND_COMMON = {

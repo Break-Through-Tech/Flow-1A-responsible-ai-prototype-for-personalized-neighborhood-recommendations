@@ -318,9 +318,8 @@ def recommend(
 ) -> dict:
     """Ranked ZIP matches from the baseline recommender (scripts/recommender.py).
 
-    Each recommendation gets a "top_coded" note (or null) for its median_rent_usd,
-    ranking_reasons and a summary built only from values the recommender
-    returned. The result gets a rank_basis saying how the ranking works.
+    Each recommendation keeps the recommender's rent-range contract, plus
+    ranking_reasons and a summary built only from returned values.
     """
     profile = {
         "budget_max": budget_max,
@@ -335,11 +334,11 @@ def recommend(
 
     features = ", ".join(result["vector_features"])
     result["rank_basis"] = (
-        f"ZIPs above budget_max are removed first. The rest are ranked by cosine similarity "
+        f"ZIPs whose lower usable rent estimate exceeds budget_max are removed first. "
+        f"The rest are ranked by cosine similarity "
         f"between the user vector and each ZIP's scores on {features}; ties go to the lower ZIP."
     )
     for rec in result["recommendations"]:
-        rec["top_coded"] = _top_coded("median_rent_usd", rec["median_rent_usd"])
         rec["ranking_reasons"] = _ranking_reasons(rec, result)
         rec["summary"] = _summary(rec, result)
     return result
@@ -354,10 +353,13 @@ def _ranking_reasons(rec: dict, result: dict) -> list[dict]:
     reasons = [
         {
             "code": "within_budget",
-            "median_rent_usd": rec["median_rent_usd"],
+            "budget_rent_usd": rec["budget_rent_usd"],
+            "rent_lower_usd": rec["rent_lower_usd"],
+            "rent_upper_usd": rec["rent_upper_usd"],
+            "rent_basis": rec["rent_basis"],
+            "budget_position": rec["budget_position"],
             "budget_max": result["budget_max"],
-            "headroom_usd": result["budget_max"] - rec["median_rent_usd"],
-            "rent_is_top_coded": rec["top_coded"] is not None,
+            "headroom_usd": round(result["budget_max"] - rec["budget_rent_usd"]),
         }
     ]
     for feature in result["vector_features"]:
@@ -380,17 +382,17 @@ def _summary(rec: dict, result: dict) -> str:
     name = rec["area_name"] or rec["zip"]
     selected = ", ".join(f"{f['feature']} {f['area_score']:.2f}" for f in rec["matched_features"])
     budget = f"${result['budget_max']:,.0f}"
-    if rec["top_coded"]:
-        # The ACS top code passed the budget filter, but the real median is only
-        # known to be above the floor, so it may still be over budget.
+    if rec["rent_basis"] == "acs_and_zori":
         rent = (
-            f"median rent more than ${rec['top_coded']['floor']:,.0f} (ACS top code, exact value unknown, "
-            f"so it may exceed the {budget} budget)"
+            f"rent reference range ${rec['rent_lower_usd']:,.0f}–${rec['rent_upper_usd']:,.0f}; "
+            f"budget position: {rec['budget_position'].replace('_', ' ')}"
         )
     else:
-        rent = f"median rent ${rec['median_rent_usd']:,.0f}, within the {budget} budget"
+        source = "ACS" if rec["rent_basis"] == "acs_only" else "Zillow ZORI"
+        rent = f"single-source {source} rent estimate ${rec['rent_lower_usd']:,.0f}"
     return (
-        f"#{rec['rank']} {name} ({rec['zip']}): {rent}. Similarity {rec['similarity']:.3f}; "
+        f"#{rec['rank']} {name} ({rec['zip']}): {rent}, within the {budget} budget. "
+        f"Similarity {rec['similarity']:.3f}; "
         f"selected-feature scores: {selected}."
     )
 

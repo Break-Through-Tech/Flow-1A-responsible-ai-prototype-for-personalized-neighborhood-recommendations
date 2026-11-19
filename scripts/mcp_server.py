@@ -75,7 +75,7 @@ def recommend(
     tags: Any = None,
     k: Any = None,
 ) -> dict[str, Any]:
-    """Rank up to k Miami ZIPs for a user profile. Each match carries ranking_reasons and a summary built only from the data.
+    """Rank up to k Miami ZIPs for a user profile. Each match carries rent bounds, usable source metadata, budget position, ranking_reasons, and a grounded summary.
 
     household: "alone" or "with_co_leaser" (a co-leaser shares a private lease; it is not co-living).
     housing_preference: "own_apartment" or "co_living". Never infer it from household.
