@@ -73,7 +73,20 @@ def test_wrappers_record_real_tool_output():
     assert agent._CALLS[-1]["tool"] == "crowd_themes" and agent._CALLS[-1]["result"] is result
     assert result["status"] in {"ok", "no_snippets"}
     bad = agent.recommend(2500, "nobody", "own_apartment", ["transit"])
-    assert bad["status"] == "invalid_input"
+    assert bad["status"] == "invalid_input" and bad["errors"]  # field errors come from tool_contracts
+
+
+def test_tool_crash_becomes_tool_error():
+    """A tool that raises (e.g. a KeyError after a data change) must not end the chat."""
+    from scripts import mcp_tools
+
+    real = mcp_tools.crowd_themes
+    mcp_tools.crowd_themes = lambda zip_code, theme=None: {}["missing_column"]
+    try:
+        result = agent.crowd_themes("33130")
+    finally:
+        mcp_tools.crowd_themes = real
+    assert result["status"] == "tool_error" and "KeyError" in result["error"]
 
 
 def test_load_env_does_not_override_existing_values():
@@ -131,6 +144,107 @@ def test_tool_loop_runs_calls_without_args_and_hides_thoughts():
         chat._modules._generate_content = lambda model, contents, config: answers.pop(0)
         later = agent.ask(chat, "Re-rank those.")
         assert later["tool_calls"] == [] and later["grounding_issues"] == []
+
+
+def test_broken_tool_result_becomes_contract_violation():
+    """A result that breaks its output contract never reaches Gemini."""
+    from scripts import mcp_tools
+
+    real = mcp_tools.ethics
+    mcp_tools.ethics = lambda: {"status": "ok"}  # missing every required field
+    try:
+        result = agent.ethics()
+    finally:
+        mcp_tools.ethics = real
+    assert result["status"] == "contract_violation" and result["errors"]
+    assert "principles" not in result
+
+
+def test_whole_number_k_sent_as_float_is_accepted():
+    """Gemini can send k as 5.0; the contract wants an integer."""
+    result = agent.recommend(2500, "alone", "own_apartment", ["transit"], k=5.0)
+    assert result["status"] == "ok" and len(result["recommendations"]) == 5
+    assert agent._CALLS[-1]["args"]["k"] == 5 and isinstance(agent._CALLS[-1]["args"]["k"], int)
+
+
+def test_unexpected_error_in_a_wrapper_becomes_tool_error():
+    """Backstop in _run_tool: even if something outside the tool fails, the chat gets a status."""
+    from scripts import tool_contracts
+
+    real = tool_contracts.call_tool
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("simulated failure outside the tool")
+
+    tool_contracts.call_tool = broken
+    try:
+        result = agent._run_tool("ethics", {})
+    finally:
+        tool_contracts.call_tool = real
+    assert result["status"] == "tool_error" and "RuntimeError" in result["error"]
+
+
+def test_requests_have_a_time_limit():
+    """Every Gemini request has a timeout and no hidden library retries."""
+    from google import genai
+
+    saved = agent._CLIENT
+    agent._CLIENT = genai.Client(api_key="offline-test")  # never used to reach Google
+    try:
+        chat = agent.new_chat()
+    finally:
+        agent._CLIENT = saved
+    options = chat._config.http_options
+    assert options.timeout == agent.REQUEST_TIMEOUT_MS
+    assert options.retry_options.attempts == 1
+
+
+def test_slow_request_is_retried_then_succeeds():
+    """A timeout is retried with a visible message instead of hanging."""
+    import httpx
+
+    class SlowThenOk:
+        calls = 0
+
+        def send_message(self, message):
+            SlowThenOk.calls += 1
+            if SlowThenOk.calls < 3:
+                raise httpx.ReadTimeout("simulated slow Gemini")
+            return "ok"
+
+    real_sleep = agent.time.sleep
+    agent.time.sleep = lambda seconds: None
+    try:
+        assert agent._send(SlowThenOk(), "hi") == "ok"
+    finally:
+        agent.time.sleep = real_sleep
+    assert SlowThenOk.calls == 3
+
+
+def test_chat_continues_after_a_tool_crash():
+    """A fake Gemini calls a crashing tool, then answers; the turn still completes."""
+    from google import genai
+    from google.genai import types
+    from scripts import mcp_tools
+
+    def reply(*parts):
+        return types.GenerateContentResponse(candidates=[types.Candidate(content=types.Content(role="model", parts=list(parts)))])
+
+    answers = [
+        reply(types.Part(function_call=types.FunctionCall(id="c1", name="crowd_themes", args={"zip_code": "33130"}))),
+        reply(types.Part(text="That tool failed, so I can't show reviews right now.")),
+    ]
+    saved_client, real = agent._CLIENT, mcp_tools.crowd_themes
+    agent._CLIENT = genai.Client(api_key="offline-test")  # never used to reach Google
+    mcp_tools.crowd_themes = lambda zip_code, theme=None: {}["missing_column"]
+    try:
+        chat = agent.new_chat()
+        chat._modules._generate_content = lambda model, contents, config: answers.pop(0)
+        turn = agent.ask(chat, "What do people say about 33130?")
+    finally:
+        agent._CLIENT, mcp_tools.crowd_themes = saved_client, real
+    assert turn["reply"].startswith("That tool failed")
+    assert turn["tool_calls"][0]["result"]["status"] == "tool_error"
 
 
 def test_conversation_script_is_valid():
