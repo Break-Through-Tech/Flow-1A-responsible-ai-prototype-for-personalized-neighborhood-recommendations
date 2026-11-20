@@ -190,6 +190,25 @@ def test_housing_check_is_off_outside_a_chat():
     assert agent.recommend(2500, "alone", "own_apartment", ["transit"])["status"] == "ok"
 
 
+def test_negated_or_unrelated_housing_words_do_not_count():
+    """Review on #47: "my own budget" or "not co-living" must not count as stating that option."""
+    cases = [
+        ("my own budget is $2,000", "own_apartment", False),
+        ("I don't want my own apartment, I want co-living", "own_apartment", False),
+        ("I don't want my own apartment, I want co-living", "co_living", True),
+        ("own apartment\u2026 not a co-living facility", "co_living", False),
+        ("own apartment\u2026 not a co-living facility", "own_apartment", True),
+        ("We want our own apartment, not co-living.", "own_apartment", True),
+        ("We want our own apartment, not co-living.", "co_living", False),
+    ]
+    try:
+        for text, housing, allowed in cases:
+            agent._USER_TEXT = text
+            assert (agent._housing_not_stated(housing) is None) == allowed, (text, housing)
+    finally:
+        agent._USER_TEXT = None
+
+
 def test_prompt_lets_mixed_requests_continue():
     """Rule 13 must not block rule 14: a mixed request with every input continues after the refusal."""
     prompt = agent.SYSTEM_PROMPT

@@ -74,9 +74,27 @@ _USER_TEXT: str | None = None
 
 # Words that count as the user stating each housing preference.
 _HOUSING_WORDS = {
-    "own_apartment": ("own apartment", "own place", "own unit", "my own", "our own"),
+    "own_apartment": ("own apartment", "own place", "own unit"),
     "co_living": ("co-living", "co living", "coliving"),
 }
+
+# A match right after one of these words (same clause, up to 3 words before) is a
+# "not this one", for example "I don't want my own apartment" or "not a co-living facility".
+_NEGATIONS = {
+    "not", "no", "never", "don't", "dont", "doesn't", "won't", "isn't",
+    "without", "instead", "than",
+}
+
+
+def _stated(text: str, words) -> bool:
+    """True if the text names one of the words without a negation just before it."""
+    text = text.lower().replace("\u2019", "'")
+    for word in words:
+        for match in re.finditer(re.escape(word), text):
+            clause = re.split(r"[,.;:!?\n\u2026]|\bbut\b", text[: match.start()])[-1]
+            if not _NEGATIONS & set(re.findall(r"[a-z']+", clause)[-3:]):
+                return True
+    return False
 
 
 def _housing_not_stated(housing_preference) -> dict | None:
@@ -89,7 +107,7 @@ def _housing_not_stated(housing_preference) -> dict | None:
     words = _HOUSING_WORDS.get(housing_preference)
     if _USER_TEXT is None or words is None:
         return None
-    if any(word in _USER_TEXT.lower() for word in words):
+    if _stated(_USER_TEXT, words):
         return None
     return {
         "status": "invalid_input",
