@@ -76,6 +76,127 @@ def test_wrappers_record_real_tool_output():
     assert bad["status"] == "invalid_input" and bad["errors"]  # field errors come from tool_contracts
 
 
+def test_recommend_returns_rent_range_through_the_contract():
+    """After #43, recommend gives a rent range and budget position, and passes the contract."""
+    result = agent.recommend(2500, "alone", "own_apartment", ["transit"])
+    assert result["status"] == "ok"
+    for rec in result["recommendations"]:
+        assert rec["rent_lower_usd"] <= rec["rent_upper_usd"]
+        assert rec["budget_position"] in {"within_reference_range", "above_upper_estimate"}
+        assert "median_rent_usd" not in rec
+
+
+def test_prompt_describes_rent_as_a_range():
+    """Rule 3 must describe the range and forbid treating the lower bound as affordable."""
+    prompt = agent.SYSTEM_PROMPT
+    assert "rent_lower_usd" in prompt and "rent_upper_usd" in prompt and "budget_position" in prompt
+    assert "never the lower bound alone" in prompt and "never say the user can afford" in prompt
+    assert "Rents are ZIP-level median rents" not in prompt
+
+
+def test_ethics_description_matches_the_mcp_server():
+    """After #50, the ethics description Gemini reads must match scripts/mcp_server.py."""
+    import inspect
+
+    from scripts import mcp_server
+
+    assert inspect.getdoc(agent.ethics) == inspect.getdoc(mcp_server.ethics)
+
+
+def test_prompt_has_ethics_first_routing():
+    """Rule 14 must carry #50's routing: ethics first for mixed requests, never infer missing inputs."""
+    prompt = agent.SYSTEM_PROMPT
+    assert "For mixed requests, call ethics first, refuse the prohibited portion" in prompt
+    assert "every required recommend input is present" in prompt
+    assert "tenant screening or scoring, inferred housing preferences" in prompt
+
+
+def test_ethics_result_has_the_new_policy_shape():
+    """The real ethics tool (from #50) passes the contract and has rules and routing."""
+    result = agent.ethics()
+    assert result["status"] == "ok"
+    assert result["rules"] and result["routing"]["mixed_request_action"]
+
+
+def test_prompt_forbids_a_re_sorted_list():
+    """Rule 2: asked to sort by rent, the agent keeps rank order instead of listing a re-sorted copy."""
+    assert "do not give a re-sorted list: keep the areas in rank order" in agent.SYSTEM_PROMPT
+
+
+def _fake_turns(chat_answers):
+    """A chat whose Gemini replies are scripted (no request reaches Google)."""
+    from google import genai
+
+    saved = agent._CLIENT
+    agent._CLIENT = genai.Client(api_key="offline-test")  # never used to reach Google
+    chat = agent.new_chat()
+    agent._CLIENT = saved
+    chat._modules._generate_content = lambda model, contents, config: chat_answers.pop(0)
+    return chat
+
+
+def _reply(*parts):
+    from google.genai import types
+
+    return types.GenerateContentResponse(candidates=[types.Candidate(content=types.Content(role="model", parts=list(parts)))])
+
+
+def _recommend_call(housing):
+    from google.genai import types
+
+    return types.Part(function_call=types.FunctionCall(
+        id="r1", name="recommend",
+        args={"budget_max": 2500, "household": "with_co_leaser", "housing_preference": housing, "tags": ["social"]},
+    ))
+
+
+def test_inferred_housing_preference_is_blocked():
+    """C8 on lite: user never said own apartment, Gemini guessed it. recommend must not run."""
+    from google.genai import types
+    from scripts import mcp_tools
+
+    real = mcp_tools.recommend
+
+    def must_not_run(*args, **kwargs):
+        raise AssertionError("recommend ran without a stated housing preference")
+
+    mcp_tools.recommend = must_not_run
+    try:
+        chat = _fake_turns([_reply(_recommend_call("own_apartment")), _reply(types.Part(text="Own apartment or co-living?"))])
+        turn = agent.ask(chat, "We're a couple with a co-leaser, budget $2500, we like social areas.")
+    finally:
+        mcp_tools.recommend = real
+    result = turn["tool_calls"][0]["result"]
+    assert result["status"] == "invalid_input" and "not stated" in result["error"]
+
+
+def test_stated_housing_preference_is_allowed_from_an_earlier_turn():
+    """Once the user says it (even in an earlier message), recommend runs normally."""
+    from google.genai import types
+
+    chat = _fake_turns([
+        _reply(types.Part(text="Own apartment or co-living?")),
+        _reply(_recommend_call("own_apartment")),
+        _reply(types.Part(text="Here are the areas.")),
+    ])
+    agent.ask(chat, "We're a couple with a co-leaser, budget $2500, we like social areas.")
+    turn = agent.ask(chat, "We want our own apartment.")
+    assert turn["tool_calls"][0]["result"]["status"] == "ok"
+
+
+def test_housing_check_is_off_outside_a_chat():
+    """Direct calls (tests, scripts) are not blocked, and the check resets after a chat turn."""
+    assert agent._USER_TEXT is None
+    assert agent.recommend(2500, "alone", "own_apartment", ["transit"])["status"] == "ok"
+
+
+def test_prompt_lets_mixed_requests_continue():
+    """Rule 13 must not block rule 14: a mixed request with every input continues after the refusal."""
+    prompt = agent.SYSTEM_PROMPT
+    assert "If the whole request is prohibited, do not call recommend" in prompt
+    assert "follow rule 14 for mixed requests" in prompt
+
+
 def test_tool_crash_becomes_tool_error():
     """A tool that raises (e.g. a KeyError after a data change) must not end the chat."""
     from scripts import mcp_tools
@@ -130,7 +251,7 @@ def test_tool_loop_runs_calls_without_args_and_hides_thoughts():
     try:
         chat = agent.new_chat()
         chat._modules._generate_content = lambda model, contents, config: answers.pop(0)
-        turn = agent.ask(chat, "We have $2500 and want transit.")
+        turn = agent.ask(chat, "We have $2500, want our own apartment and transit.")
     finally:
         agent._CLIENT = saved
     assert turn["reply"] == "Here are the areas."
