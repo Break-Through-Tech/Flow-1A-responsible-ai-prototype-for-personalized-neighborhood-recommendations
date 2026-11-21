@@ -126,7 +126,7 @@ python scripts/test_tool_contracts.py     # well-formed, malformed, empty and no
 |------|-----------------------|
 | Arguments break the input schema (missing field, wrong type, unknown tag or theme, bad ZIP, `budget_max <= 0`, `k` outside 1–10) | `{"status": "invalid_input", "error": "...", "errors": [{"field", "message"}]}`, never a free-text SDK error |
 | Arguments are well-formed but unusable (only unscored tags such as `walkable`) | `invalid_input` from the tool itself |
-| Nothing matches | `not_found` (`area_stats`), `no_snippets` (`crowd_themes`) or `no_areas_within_budget` (`recommend`), with an empty list |
+| Nothing matches | `not_found` (`area_stats`, or `crowd_themes` for a ZIP outside our data), `no_snippets` (`crowd_themes` for one of our ZIPs with no reviews) or `no_areas_within_budget` (`recommend`), with an empty list |
 | The tool's result breaks its output schema | `{"status": "contract_violation", ...}` in place of the result, so the agent never sees unchecked data |
 | The tool itself raises an error | `{"status": "tool_error", "tool", "error"}` instead of an SDK error |
 
@@ -163,7 +163,7 @@ Starter files are in `data/`. Column definitions are in `data_dictionary.md`.
 |------|---------------|-----|
 | `miami_dade_public_features.csv` | Real public data | Census + Zillow-style indices by ZIP |
 | `area_features.csv` | Mixed starter | Preference scores for the recommender |
-| `crowd_text_snippets.csv` | Demo | Replace with real review corpora in October |
+| `crowd_text_snippets.csv` | Real review text | Google Maps review excerpts for the 3 anchor ZIPs (Google Local Data 2021), used for NLP themes |
 | `area_options.csv` | Synthetic only | UI demo cards — NOT real listings |
 
 Census suppression values show as `-666666666` — decide how to handle those in cleaning.

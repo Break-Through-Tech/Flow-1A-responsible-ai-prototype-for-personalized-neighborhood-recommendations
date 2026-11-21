@@ -84,6 +84,8 @@ Downtown (33128) is thin: the dataset has few reviews there that talk about the 
 
 Dataset citation: Li, Shang, McAuley, *UCTopic*, ACL 2022; Yan, He, Li, Zhang, McAuley, *Personalized Showcases*, SIGIR 2023.
 
+Terms of use: the dataset is released by UCSD for research use, and the review text is user-written Google Maps content. It is used here for a non-commercial student project, quoted as short excerpts with the source cited.
+
 | Column | Type | Description |
 |--------|------|-------------|
 | snippet_id | string | Stable ID set in `crowd_text_selection.json`; it does not change when other snippets are added or removed, and removed IDs are not reused |

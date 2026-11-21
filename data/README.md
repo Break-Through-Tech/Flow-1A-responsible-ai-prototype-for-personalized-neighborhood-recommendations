@@ -30,6 +30,6 @@ Co-living is an **optional** path for people who are **alone** and **want** shar
 |------|-----------------|
 | `area_features.csv` | ZIP-level scores for the model |
 | `area_options.csv` | Demo cards with `housing_preference` + `household` |
-| `crowd_text_snippets.csv` | Sample review text by ZIP |
+| `crowd_text_snippets.csv` | Real Google Maps review excerpts for the 3 anchor ZIPs (Google Local Data 2021); see `data_dictionary.md` |
 
 All listing-style rows are **synthetic demos** — not real apartments.

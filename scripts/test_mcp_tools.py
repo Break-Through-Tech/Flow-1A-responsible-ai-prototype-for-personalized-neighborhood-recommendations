@@ -124,7 +124,8 @@ def test_crowd_themes_returns_text_for_a_known_zip_and_filters_by_theme():
     assert out["count"] > 0 and all(s["text"] for s in out["snippets"])
     transit = t.crowd_themes("33130", theme="transit")
     assert transit["count"] >= 1 and {s["theme"] for s in transit["snippets"]} == {"transit"}
-    assert t.crowd_themes("99999")["status"] == "no_snippets"
+    assert t.crowd_themes("99999")["status"] == "not_found"  # not one of our ZIPs
+    assert t.crowd_themes("33150")["status"] == "no_snippets"  # our ZIP, no reviews
     assert t.crowd_themes("x")["status"] == "invalid_input"
 
 
