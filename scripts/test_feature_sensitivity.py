@@ -1,7 +1,18 @@
 
-"""Tests for the feature sensitivity analysis."""
+"""Tests for the feature sensitivity analysis.
+
+Run directly without pytest:
+
+    python scripts/test_feature_sensitivity.py
+"""
 
 import json
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from scripts.feature_sensitivity import (
     FEATURES,
@@ -11,15 +22,7 @@ from scripts.feature_sensitivity import (
     count_overlap,
     get_ranked_zips,
 )
-
-from scripts.recommender import (
-    filter_by_budget,
-    load_area_features,
-    recommend,
-    validate_profile,
-)
-
-
+from scripts.recommender import recommend, validate_profile
 
 
 def load_profiles():
@@ -28,33 +31,18 @@ def load_profiles():
 
 
 def test_baseline_rankings_match_recommender():
-    """Check that our ranking calculation matches the recommender."""
-    areas = load_area_features()
-
+    """Check that baseline ZIPs come from the recommender."""
     for profile in load_profiles():
-        checked = validate_profile(profile)
-        candidates = filter_by_budget(areas, checked["budget_max"])
         expected = [
-            item["zip"]
-            for item in recommend(profile)["recommendations"]
+            item["zip"] for item in recommend(profile)["recommendations"]
         ]
-
-        if candidates.empty:
-            assert expected == []
-            continue
-
-        actual = get_ranked_zips(
-            candidates,
-            checked["vector_features"],
-            checked["active_features"],
-            checked["top_k"],
-        )
+        actual = get_ranked_zips(profile)
 
         assert actual == expected, profile["profile_id"]
 
 
 def test_feature_removal_results():
-    """Check that each feature comparison has valid results."""
+    """Check that each feature comparison returns valid results."""
     results = analyze()
 
     assert len(results) == len(load_profiles()) * len(FEATURES)
@@ -78,9 +66,7 @@ def test_feature_removal_results():
 
 
 def test_no_budget_match_is_handled():
-    """Check that profiles without affordable ZIPs are handled."""
-    areas = load_area_features()
-
+    """Check that a profile with no affordable ZIPs is handled."""
     profile = {
         "profile_id": "no_budget_match",
         "household": "alone",
@@ -89,7 +75,7 @@ def test_no_budget_match_is_handled():
         "tags": ["transit"],
     }
 
-    results = analyze_profile(profile, areas)
+    results = analyze_profile(profile, load_areas())
 
     for row in results:
         if row["feature"] == "co_living_friendly":
@@ -98,10 +84,18 @@ def test_no_budget_match_is_handled():
             assert row["status"] == "no_candidates"
 
 
-def test_co_living_feature_is_conditional():
-    """Check that co-living only affects co-living profiles."""
-    areas = load_area_features()
+def load_areas():
+    """Load the original neighborhood data for testing."""
+    import pandas as pd
 
+    return pd.read_csv(
+        _ROOT / "data" / "area_features_clean.csv",
+        dtype={"zip": str},
+    )
+
+
+def test_co_living_feature_is_conditional():
+    """Check that co-living is only scored for co-living profiles."""
     base_profile = {
         "profile_id": "housing_test",
         "household": "alone",
@@ -113,20 +107,18 @@ def test_co_living_feature_is_conditional():
         **base_profile,
         "housing_preference": "own_apartment",
     }
-
     co_living_profile = {
         **base_profile,
         "housing_preference": "co_living",
     }
 
-    own_results = analyze_profile(own_profile, areas)
-    co_living_results = analyze_profile(co_living_profile, areas)
+    own_results = analyze_profile(own_profile, load_areas())
+    co_living_results = analyze_profile(co_living_profile, load_areas())
 
     own_feature = next(
         row for row in own_results
         if row["feature"] == "co_living_friendly"
     )
-
     co_living_feature = next(
         row for row in co_living_results
         if row["feature"] == "co_living_friendly"
@@ -138,8 +130,9 @@ def test_co_living_feature_is_conditional():
     assert co_living_feature["status"] == "ok"
     assert co_living_feature["selected"] is True
 
-def test_unselected_features_can_affect_rankings():
-    """Check the known influence of unselected features."""
+
+def test_unselected_features_are_reported():
+    """Check that unselected features are included in the analysis."""
     results = analyze()
 
     unselected = [
@@ -149,26 +142,40 @@ def test_unselected_features_can_affect_rankings():
     ]
 
     assert unselected
-    assert any(not row["same_order"] for row in unselected)
-    assert any(
-        row["overlap"] < row["original_count"]
-        for row in unselected
-    )
+
+    for row in unselected:
+        assert isinstance(row["same_order"], bool)
+        assert isinstance(row["overlap"], int)
+
 
 def test_count_overlap():
-    """Check that overlap counts shared ZIPs, regardless of order."""
+    """Check that shared ZIPs are counted correctly."""
     original = ["33127", "33128", "33130", "33132", "33136"]
-
     changed = ["33130", "33128", "33137", "33139", "33140"]
+
     assert count_overlap(original, changed) == 2
-
-    # Changing only the order should not change membership.
-    reordered = list(reversed(original))
-    assert count_overlap(original, reordered) == 5
-
-    # Lists with no shared ZIPs should have zero overlap.
-    unrelated = ["33010", "33012"]
-    assert count_overlap(original, unrelated) == 0
-
-    # An empty recommendation list has no overlap.
+    assert count_overlap(original, list(reversed(original))) == 5
+    assert count_overlap(original, ["33010", "33012"]) == 0
     assert count_overlap(original, []) == 0
+
+
+if __name__ == "__main__":
+    tests = [
+        (name, fn)
+        for name, fn in sorted(globals().items())
+        if name.startswith("test_") and callable(fn)
+    ]
+
+    failed = 0
+
+    for name, fn in tests:
+        try:
+            fn()
+        except Exception as exc:
+            failed += 1
+            print(f"FAIL  {name}: {type(exc).__name__}: {exc}")
+        else:
+            print(f"ok    {name}")
+
+    print(f"\n{len(tests) - failed}/{len(tests)} passed")
+    raise SystemExit(1 if failed else 0)

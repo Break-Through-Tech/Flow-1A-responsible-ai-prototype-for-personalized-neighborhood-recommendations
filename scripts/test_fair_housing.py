@@ -1,13 +1,22 @@
-"""Tests for household independence and excluded recommender features."""
+"""Tests for household independence and excluded recommender features.
 
+Run from the repository root:
+
+    python scripts/test_fair_housing.py
+"""
+
+import shutil
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pandas as pd
 
-from scripts.recommender import recommend
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
-import shutil
+from scripts.recommender import recommend
 
 
 def compare_household_results(budget, housing, tags):
@@ -91,7 +100,7 @@ def test_household_independence_for_co_living():
 
 def test_excluded_features_do_not_change_rankings():
     """Check that excluded features do not affect recommendations."""
-    data_path = Path("data/area_features_clean.csv")
+    data_path = _ROOT / "data" / "area_features_clean.csv"
 
     original = pd.read_csv(data_path, dtype={"zip": str})
     modified = original.copy()
@@ -142,3 +151,24 @@ def test_excluded_features_do_not_change_rankings():
             assert original_result["candidate_count"] == modified_result["candidate_count"]
             assert original_result["status"] == modified_result["status"]
             assert original_result["recommendations"] == modified_result["recommendations"]
+
+if __name__ == "__main__":
+    tests = [
+        (name, fn)
+        for name, fn in sorted(globals().items())
+        if name.startswith("test_") and callable(fn)
+    ]
+
+    failed = 0
+
+    for name, fn in tests:
+        try:
+            fn()
+        except Exception as exc:
+            failed += 1
+            print(f"FAIL  {name}: {type(exc).__name__}: {exc}")
+        else:
+            print(f"ok    {name}")
+
+    print(f"\n{len(tests) - failed}/{len(tests)} passed")
+    raise SystemExit(1 if failed else 0)

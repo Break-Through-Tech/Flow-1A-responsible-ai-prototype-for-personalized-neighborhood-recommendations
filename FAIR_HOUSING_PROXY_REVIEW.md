@@ -30,6 +30,32 @@ The following table summarizes the potential risks and decisions for all 13 colu
 
 The four scored lifestyle features are retained provisionally for the current prototype. This is not a finding that they are free from demographic proxy risks.
 
+### Additional Public-Data Features Exposed Through `area_stats`
+
+The review above covers the 13 columns in the recommender's cleaned feature dataset. However, the MCP `area_stats` tool also returns Census and Zillow statistics that are not used directly in similarity scoring.
+
+These fields need to be considered because the agent may use them when answering neighborhood questions.
+
+| Fields | Potential Risk | Decision |
+|---|---|---|
+| `B25003_002E`, `B25003_003E` (owner/renter counts) | Housing tenure may be associated with income, demographic patterns, and neighborhood composition. | Keep for factual aggregate information. Do not use tenure or renter share to steer users toward or away from neighborhoods based on assumptions about residents. |
+| `B25077_001E`, `zillow_home_value_index` (home values) | Property values may reflect neighborhood wealth and historical inequalities. | Keep for factual reference only. Do not use home values as a substitute for demographic characteristics or neighborhood desirability. |
+| `B07003_001E`, `B07003_004E`, `B07003_008E`, `B07003_010E`, `moved_different_house_pct` (mobility) | Residential mobility may indirectly reflect population characteristics. | Keep for factual aggregate information. Do not use migration patterns to infer who belongs in a neighborhood. |
+| `B01003_001E`, `population` (population) | Population counts may be misused to make assumptions about residents. | Keep for factual information, not demographic steering. |
+| `B11016_001E` (households) | Household counts may be mistaken for information about family composition. | Keep for factual information. Do not infer family suitability or preferences. |
+| `B25064_001E`, `median_rent_usd`, `zillow_rent_index` (rent) | Rent differences may be associated with socioeconomic and demographic patterns. | Keep for factual reference and supported budget calculations. Do not use rent as a demographic substitute. |
+| `NAME`, `zip` (identifiers) | Geographic identifiers may indirectly reflect demographic patterns. | Keep for identifying areas, not demographic targeting. |
+| `*_suppressed`, `*_missing` (data-quality flags) | Missing data may affect neighborhood coverage and interpretation. | Keep for transparency about unavailable or imputed values, not ranking. |
+
+`B07003_008E` specifically represents male residents who moved within the same county. It should not be interpreted as the total number of people who moved.
+
+**Housing tenure is a particular concern.** Reporting owner-occupied or renter-occupied housing counts as public statistics is different from using those counts to decide where someone should live.
+
+For example, the agent may explain a ZIP's renter share when asked for factual information. It should not recommend or exclude neighborhoods based on assumptions about the people who rent or own homes there.
+
+These are recommended usage limits for the prototype. This review does not establish that the LLM agent consistently enforces them.
+
+
 ## 2. Existing Safeguards
 
 The current implementation includes the following safeguards:
@@ -70,6 +96,29 @@ Notable results include:
 The relationships between `social`, `quiet`, and `co_living_friendly` may affect how much influence related neighborhood characteristics have in the similarity calculation.
 
 However, these are correlations between neighborhood features, not measurements of demographic discrimination.
+
+### Housing Tenure and Feature Correlations
+
+I also checked whether the four scored lifestyle features are related to neighborhood renter share.
+
+Renter share was calculated using Census owner-occupied (`B25003_002E`) and renter-occupied (`B25003_003E`) housing counts:
+
+`renter_share = renter_occupied / (owner_occupied + renter_occupied)`
+
+The analysis included 78 ZIP codes with usable tenure data out of 80 rows in the cleaned public dataset. No missingness or suppression flags were recorded for the two tenure columns.
+
+| Feature | Correlation with Renter Share |
+|---|---:|
+| `transit` | +0.643 |
+| `co_living_friendly` | +0.599 |
+| `social` | +0.324 |
+| `quiet` | +0.004 |
+
+The strongest relationships were for `transit` and `co_living_friendly`. Neighborhoods with higher scores on these features also tended to have higher renter shares.
+
+These findings are useful for identifying possible proxy risks, but renter share is not itself a protected demographic characteristic. The correlations do not establish demographic discrimination.
+
+The results support keeping housing-tenure information separate from recommendation scoring and avoiding assumptions about residents based on whether they rent or own their homes.
 
 ### Similarity Calculation
 
@@ -126,15 +175,15 @@ The original dataset was not modified.
 
 ## 6. Feature Sensitivity Analysis
 
-We also examined how removing one scoring dimension at a time affected recommendation rankings.
+We examined how setting one neighborhood feature column to zero at a time affected recommendation rankings. The analysis used the existing `recommend()` function with a temporary copy of the dataset, keeping the user profile and other feature values unchanged.
 
 The analysis used the existing 20 evaluation profiles and preserved the original budget filter.
 
-For each feature, we compared the original top-five ZIP recommendations with results calculated without that feature.
+For each feature, we compared the original top-five ZIP recommendations with results obtained after setting that feature's neighborhood scores to zero.
 
 ### Results
 
-| Feature Removed | Selected by User? | Comparable Profiles | Top-5 Membership Changed | Average ZIP Overlap |
+| Feature Zeroed | Selected by User? | Comparable Profiles | Top-5 Membership Changed | Average ZIP Overlap |
 |---|---|---:|---:|---:|
 | `transit` | Yes | 7 | 4 | 4.14 |
 | `transit` | No | 8 | 8 | 3.00 |
@@ -146,13 +195,13 @@ For each feature, we compared the original top-five ZIP recommendations with res
 
 Average overlap measures how many ZIP codes appear in both the original and modified top-five results.
 
-Profiles without affordable ZIPs or without remaining active features were excluded from the relevant comparisons.
+Profiles without affordable ZIPs or without remaining active features were excluded from the relevant comparisons. When the feature being zeroed is the user's only active preference, the comparison is marked as not applicable. This avoids interpreting a result where the selected preference no longer has a usable neighborhood score.
 
 ### Findings
 
-The analysis showed that removing scoring dimensions can change recommendations even when users did not select those features.
+The analysis showed that setting neighborhood feature scores to zero can change recommendations even when users did not select those features.
 
-For example, removing `quiet` changed the top-five membership in 10 of 11 comparable profiles where quietness was not selected.
+For example, setting quiet scores to zero changed the top-five membership in 10 of 11 comparable profiles where quietness was not selected.
 
 This confirms that unselected features can influence rankings through the baseline cosine-similarity calculation.
 
@@ -160,7 +209,19 @@ The analysis also showed that `co_living_friendly` has a meaningful effect on co
 
 These results measure feature influence, not demographic discrimination.
 
-Removing a feature from the similarity calculation is a diagnostic experiment and does not mean the feature should automatically be removed from the production system.
+Setting a feature's neighborhood scores to zero is a diagnostic experiment. It does not necessarily have the same effect as removing that feature from the scoring calculation, and it does not mean the feature should be removed from the production system.
+
+### Downtown Quiet-Score Example
+
+The influence of unselected features is not always a problem. In some cases, considering other neighborhood characteristics may produce a more realistic recommendation.
+
+For a quiet-only profile with a $2,500 budget, Downtown (33128) ranks 2nd out of 67 affordable ZIP codes when sorted by its quietness score alone. However, it ranks 35th under the current cosine-similarity recommender.
+
+Downtown has a high quietness score (0.937), but it also has high transit (0.919) and social (0.800) scores. These additional features affect its cosine similarity, even though the user only selected `quiet`.
+
+This example suggests that the quietness score may not fully represent the neighborhood's characteristics. The lower cosine ranking may be more realistic, but neither ranking has been independently validated as the better recommendation.
+
+This example describes the current baseline recommender. The rankings may change if the scoring method is updated.
 
 ## 7. Testing Summary
 
@@ -171,15 +232,29 @@ The following checks were completed:
 | Household comparison tests | 4 passed |
 | Excluded-feature test | 1 passed |
 | Sensitivity-analysis tests | 6 passed |
-| Full project test suite | 102 passed |
+| Full project test suite (previous run, before these review changes) | 102 passed |
 | Baseline evaluation profiles | 20 completed |
 | Budget filter pass rate | 100% |
 
 The sensitivity tests confirmed that the analysis reproduced the original recommendation rankings, handled no-budget scenarios, and respected the conditional co-living feature.
 
-The full project suite passed using:
+The Task #20 tests and sensitivity analysis were run using:
 
-`python -m pytest scripts/ eval/ -q`
+`python scripts/test_fair_housing.py`
+`python scripts/test_feature_sensitivity.py`
+`python scripts/feature_sensitivity.py`
+
+The two test files passed without pytest (5/5 fair-housing tests and 6/6 sensitivity tests). Both test files were also run successfully from outside the repository directory to verify that their imports and file paths work correctly.
+
+### Compatibility With the Tuned Recommender
+
+I also tested the sensitivity analysis against the current implementation of Frank's tuned recommender from Task #15.
+
+The analysis completed all 80 feature comparisons across the 20 evaluation profiles without errors. Of these, 55 were comparable, 3 had no affordable ZIPs, and 8 had no active features remaining. The other comparisons involved features not used by the corresponding housing preference.
+
+The analysis used the tuned recommender's own scoring function rather than independently calculating cosine similarity. This confirms that the updated analysis can run with the current tuned implementation without changing the production recommender.
+
+The ranking results differed from the baseline, as expected, because the tuned recommender uses a different scoring method. The sensitivity results in Section 6 describe the current baseline and may change when the tuned scoring method is integrated.
 
 ## 8. Final Decisions and Recommendations
 
