@@ -26,7 +26,7 @@ if str(_ROOT) not in sys.path:
 
 from scripts import mcp_tools as t
 from scripts import tool_contracts as c
-from scripts.recommender import recommend as engine_recommend
+from scripts import recommender as rec
 
 PROFILE = {"budget_max": 2500, "household": "alone", "housing_preference": "own_apartment", "tags": ["transit"]}
 
@@ -39,9 +39,14 @@ def _call(tool: str, arguments: dict) -> dict:
 
 
 def _cheapest_rent() -> float:
-    """The lowest rent any ZIP can qualify at, read from the engine so a data refresh can't break this."""
-    everything = engine_recommend({**PROFILE, "budget_max": 1_000_000}, top_k=10_000)
-    return min(r["budget_rent_usd"] for r in everything["recommendations"])
+    """The lowest rent any ZIP can qualify at, read from the engine so a data refresh can't break this.
+
+    Uses the unrounded rent_lower_usd the budget filter compares against, not the
+    rounded budget_rent_usd in the results: a rent of $1,000.49 shows as $1,000,
+    which is below the real threshold.
+    """
+    eligible = rec.filter_by_budget(rec.load_area_features(), float("inf"))
+    return float(eligible["rent_lower_usd"].min())
 
 
 # --- budget below anything / zero ZIPs pass the filter ---------------------------
@@ -63,8 +68,9 @@ def test_budget_exactly_at_the_cheapest_rent_qualifies():
 def test_fewer_candidates_than_k_returns_all_of_them_not_padding():
     """Expected: if only a few ZIPs fit, return just those; never pad the list with over-budget ZIPs."""
     out = _call("recommend", {**PROFILE, "budget_max": _cheapest_rent(), "k": 10})
-    assert len(out["recommendations"]) == out["candidate_count"] < 10
-    assert all(r["budget_rent_usd"] <= out["budget_max"] for r in out["recommendations"])
+    assert 1 <= len(out["recommendations"]) == out["candidate_count"] < 10
+    # budget_rent_usd is rounded, so compare it with the rounded budget
+    assert all(r["budget_rent_usd"] <= round(out["budget_max"]) for r in out["recommendations"])
 
 
 def test_invalid_budgets_are_rejected_not_guessed():
