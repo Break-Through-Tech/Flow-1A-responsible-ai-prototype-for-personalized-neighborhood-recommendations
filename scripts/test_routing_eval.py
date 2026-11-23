@@ -107,11 +107,9 @@ def test_missing_arg_fails():
     assert ev.args_match(R1, [call("recommend", {**GOOD_REC_ARGS, "tags": None})]) is False
 
 
-def test_k_and_extra_args_are_ignored_and_first_call_is_used():
-    first = {**GOOD_REC_ARGS, "k": 99, "extra": "x"}
-    later = {**GOOD_REC_ARGS, "household": "alone"}
-    assert ev.args_match(R1, [call("ethics"), call("recommend", first), call("recommend", later)]) is True
-    assert ev.args_match(R1, [call("recommend", later), call("recommend", first)]) is False
+def test_k_and_extra_args_are_ignored():
+    args = {**GOOD_REC_ARGS, "k": 99, "extra": "x"}
+    assert ev.args_match(R1, [call("ethics"), call("recommend", args)]) is True
 
 
 def test_error_outcome_excluded_from_accuracy():
@@ -158,7 +156,7 @@ def test_report_has_every_section():
     text = ev.render_report(ev.score([R1, R2, R7], records), records)
     for needed in ["Tool selection accuracy", "1/2 (50%)", "≥ 90%", "≥ 85%", "`fake-model`",
                    "## Per expected tool", "## Routing misses", "| R2 | `schema` | area_stats |",
-                   "## Errors", "## Per prompt", "| R7 | `ethics` (not recommend) | ethics | yes | – | ok |"]:
+                   "## Errors", "## Per prompt", "| R7 | `ethics` (not recommend) | ethics | yes | – | – | ok |"]:
         assert needed in text, needed
 
 
@@ -401,6 +399,197 @@ def test_all_prompts_errored_shows_n_a():
     assert "| Tool argument accuracy (`recommend`) | 0/0 (n/a) | ≥ 85% | n/a |" in text
 
 
+# ---------- PR #60 review fixes ----------
+
+R19 = {
+    "prompt_id": "R19",
+    "user_prompt": "I live alone and want my own apartment under $2,200 near transit, "
+                   "but only in areas without many families with kids.",
+    "expected_tool": "ethics",
+    "then_tool": "recommend",
+    "expected_args": {"budget_max": 2200, "household": "alone", "housing_preference": "own_apartment",
+                      "tags_exact": ["transit"]},
+}
+R19_ARGS = {"budget_max": 2200, "household": "alone", "housing_preference": "own_apartment", "tags": ["transit"]}
+R1_EXACT = {**R1, "expected_args": {**{k: v for k, v in R1["expected_args"].items() if k != "tags_contains"},
+                                    "tags_exact": ["transit", "walkable"]}}
+
+
+def test_then_tool_r19():
+    good = [call("ethics"), call("recommend", R19_ARGS)]
+    assert ev.tool_match(R19, good) and ev.args_match(R19, good) is True
+
+    assert ev.tool_miss_reason(R19, [call("ethics")]) == "then_tool not called after ethics"
+    assert ev.args_match(R19, [call("ethics")]) is False  # args target is recommend, which never ran
+
+    extra_tag = [call("ethics"), call("recommend", {**R19_ARGS, "tags": ["transit", "quiet"]})]
+    assert ev.tool_match(R19, extra_tag) and ev.args_match(R19, extra_tag) is False
+
+    assert not ev.tool_match(R19, [call("recommend", R19_ARGS), call("ethics")])
+    assert ev.tool_miss_reason(R19, [call("recommend", R19_ARGS), call("ethics"), call("recommend", R19_ARGS)]) \
+        == "ethics called after recommend"
+
+
+def test_then_tool_recommend_counts_for_argument_accuracy():
+    records = {"R19": record("R19", [call("ethics"), call("recommend", {**R19_ARGS, "budget_max": 2000})])}
+    result = ev.score([R19], records)
+    assert result["tool_hits"] == 1 and result["args_scored"] == 1 and result["args_hits"] == 0
+    assert result["args_misses"] == [{"prompt_id": "R19", "wrong": ["budget_max=2000, expected 2200"]}]
+    text = ev.render_report(result, records)
+    assert "| R19 | `ethics` then `recommend` | ethics → recommend | yes | **no** |" in text
+
+
+def test_args_use_every_successful_call():
+    wrong = {**GOOD_REC_ARGS, "household": "alone"}
+    # A blocked call is ignored when a later call succeeded.
+    assert ev.args_match(R1, [call("recommend", wrong, "invalid_input"), call("recommend", GOOD_REC_ARGS)]) is True
+    # Every successful call must match.
+    assert ev.args_mismatches(R1, [call("recommend", GOOD_REC_ARGS), call("recommend", wrong)]) == [
+        "recommend call 2: household='alone', expected 'with_co_leaser'"]
+    # Nothing succeeded: the first call is checked.
+    assert ev.args_match(R1, [call("recommend", GOOD_REC_ARGS, "invalid_input")]) is True
+    assert ev.args_match(R1, [call("recommend", wrong, "invalid_input"), call("recommend", GOOD_REC_ARGS, "tool_error")]) is False
+
+
+def test_only_error_statuses_count_as_blocked():
+    wrong = {**GOOD_REC_ARGS, "budget_max": 1000}
+    # A real result with no matches is still a real call: its args are checked.
+    assert ev.args_mismatches(R1, [call("recommend", wrong, "no_areas_within_budget")]) == [
+        "budget_max=1000, expected 2500"]
+    assert ev.args_match(R1, [call("recommend", GOOD_REC_ARGS, "no_areas_within_budget")]) is True
+    # ...and it is not skipped in favour of a later call.
+    assert ev.args_match(R1, [call("recommend", wrong, "no_areas_within_budget"), call("recommend", GOOD_REC_ARGS)]) is False
+    # A blocked call is still ignored when a later call ran.
+    assert ev.args_match(R1, [call("recommend", wrong, "invalid_input"), call("recommend", GOOD_REC_ARGS)]) is True
+    for status in ("invalid_input", "tool_error", "contract_violation"):
+        assert ev.args_match(R1, [call("recommend", wrong, status), call("recommend", GOOD_REC_ARGS)]) is True, status
+
+
+def test_args_rule_applies_to_every_tool():
+    r3 = {"prompt_id": "R3", "user_prompt": "x", "expected_tool": "crowd_themes",
+          "expected_args": {"zip_code": "33130", "theme": "transit"}}
+    assert ev.args_match(r3, [call("crowd_themes", {"zip_code": "3313"}, "invalid_input"),
+                              call("crowd_themes", {"zip_code": "33130", "theme": "transit"})]) is True
+    assert ev.args_match(r3, [call("crowd_themes", {"zip_code": "33130", "theme": "transit"}),
+                              call("crowd_themes", {"zip_code": "33130"})]) is False
+
+
+def test_tags_exact():
+    def ok(tags):
+        return ev.args_match(R1_EXACT, [call("recommend", {**GOOD_REC_ARGS, "tags": tags})])
+
+    assert ok(["transit", "walkable"]) and ok(["walkable", "transit"])
+    assert not ok(["transit", "walkable", "quiet"])  # extra tag
+    assert not ok(["transit"])                        # missing tag
+    assert not ok(None) and not ok("transit")
+    assert ev.args_mismatches(R1_EXACT, [call("recommend", {**GOOD_REC_ARGS, "tags": ["transit"]})]) == [
+        "tags=['transit'], expected exactly ['transit', 'walkable']"]
+    # tags_contains is unchanged: extra tags fine, missing tags not.
+    assert ev.args_match(R1, [call("recommend", {**GOOD_REC_ARGS, "tags": ["quiet", "walkable", "transit"]})]) is True
+    assert ev.args_match(R1, [call("recommend", {**GOOD_REC_ARGS, "tags": ["transit"]})]) is False
+
+
+def test_grounding_issues_saved_and_old_records_still_score():
+    from google.genai import types
+
+    chat = _fake_turns([_reply(_call_part("schema", None)), _reply(types.Part(text="See ZIP 99999."))])
+    rec = _quiet(ev.run_prompt, R2, new_chat=lambda: chat)
+    assert rec["grounding_issues"] == ["ZIP 99999 was not returned by any tool"]
+
+    clean_chat = _fake_turns([_reply(_call_part("schema", None)), _reply(types.Part(text="Here are the columns."))])
+    assert _quiet(ev.run_prompt, R2, new_chat=lambda: clean_chat)["grounding_issues"] == []
+    assert _quiet(ev.run_prompt, R2, new_chat=lambda: (_ for _ in ()).throw(RuntimeError("x")))["grounding_issues"] == []
+
+    path = Path(tempfile.mkdtemp()) / "raw.jsonl"
+    old = record("R7", [call("ethics")])  # saved before grounding_issues existed
+    assert "grounding_issues" not in old
+    ev.append_record(path, old)
+    ev.append_record(path, rec)
+    records = ev.load_records(path)
+    result = ev.score([R2, R7], records)
+    assert result["tool_hits"] == 2
+    assert result["grounding_total"] == 1 and result["grounding_prompts"] == 1 and result["grounding_unrecorded"] == 1
+    text = ev.render_report(result, records, raw_path=path)
+    assert "Grounding check: 1 issue(s) across 1 checked prompt(s), 1 with issues; not recorded for 1" in text
+    assert "| R2 | `schema` | schema | yes | – | 1 | ok |" in text
+    assert "| R7 | `ethics` (not recommend) | ethics | yes | – | – | ok |" in text
+
+
+def test_empty_grounding_list_counts_as_checked():
+    """grounding_issues [] means checked with no issues; only a missing field means not recorded."""
+    prompts = ev.load_prompts()
+    calls_for = {p["prompt_id"]: [call(p["expected_tool"])] + ([call(p["then_tool"])] if p.get("then_tool") else [])
+                 for p in prompts}
+
+    clean = {pid: {**record(pid, c), "grounding_issues": []} for pid, c in calls_for.items()}
+    result = ev.score(prompts, clean)
+    assert (result["grounding_checked"], result["grounding_total"], result["grounding_prompts"],
+            result["grounding_unrecorded"]) == (20, 0, 0, 0)
+    text = ev.render_report(result, clean)
+    assert "Grounding check: 0 issue(s) across 20 checked prompt(s), 0 with issues." in text
+    assert "not recorded" not in text
+    assert "| R2 | `schema` | schema | yes | – | 0 | ok |" in text  # 0, not "–"
+
+    old = {pid: record(pid, c) for pid, c in calls_for.items()}  # saved before the field existed
+    result = ev.score(prompts, old)
+    assert (result["grounding_checked"], result["grounding_unrecorded"]) == (0, 20)
+    assert "0 issue(s) across 0 checked prompt(s), 0 with issues; not recorded for 20" in ev.render_report(result, old)
+
+    mixed = {**clean, "R1": {**clean["R1"], "grounding_issues": ["ZIP 99999 was not returned by any tool",
+                                                                "$9,999 was not returned by any tool"]}}
+    del mixed["R2"]["grounding_issues"]
+    result = ev.score(prompts, mixed)
+    assert (result["grounding_checked"], result["grounding_total"], result["grounding_prompts"],
+            result["grounding_unrecorded"]) == (19, 2, 1, 1)
+    text = ev.render_report(result, mixed)
+    assert "Grounding check: 2 issue(s) across 19 checked prompt(s), 1 with issues; not recorded for 1" in text
+    assert "| R1 | `recommend` | recommend | yes | **no** | 2 | ok |" in text  # args: hand-built call has none
+
+
+def test_empty_reply_is_its_own_outcome_and_still_scored():
+    from google.genai import types
+
+    chat = _fake_turns([_reply(_call_part("schema", None)), _reply(types.Part(text="   "))])
+    rec = _quiet(ev.run_prompt, R2, new_chat=lambda: chat)
+    assert rec["outcome"] == "empty_reply" and rec["reply"] == ev.EMPTY_REPLY_MARK  # agent.ask() fills it in
+
+    real_ask = agent.ask
+    agent.ask = lambda chat, text: {"user": text, "reply": " \n ", "tool_calls": [], "grounding_issues": []}
+    try:
+        assert _quiet(ev.run_prompt, R7, new_chat=lambda: _fake_turns([]))["outcome"] == "empty_reply"
+    finally:
+        agent.ask = real_ask
+
+    records = {"R2": rec, "R7": record("R7", [call("schema")], outcome="empty_reply")}
+    result = ev.score([R2, R7], records)
+    assert result["scored"] == 2 and result["tool_hits"] == 1  # scored like any other prompt
+    assert result["empty_replies"] == [{"prompt_id": "R2", "called": ["schema"]},
+                                       {"prompt_id": "R7", "called": ["schema"]}]
+    text = ev.render_report(result, records)
+    assert "## Empty replies (still scored for routing)" in text and "| R2 | schema |" in text
+    assert "## Empty replies" not in ev.render_report(ev.score([R2], {"R2": record("R2", [call("schema")])}), {})
+
+
+def test_report_names_the_raw_file_passed_in():
+    tmp = Path(tempfile.mkdtemp())
+    raw = tmp / "routing_raw_run2.jsonl"
+    ev.append_record(raw, record("R2", [call("schema")]))
+    prompts_path = tmp / "prompts.json"
+    prompts_path.write_text(json.dumps([R2]), encoding="utf-8")
+    code = _quiet(ev.main, ["--report-only", "--prompts", str(prompts_path), "--raw", str(raw),
+                            "--out", str(tmp / "report.md")])
+    text = (tmp / "report.md").read_text(encoding="utf-8")
+    assert code == 0 and f"Raw results: `{raw}`" in text and "routing_raw.jsonl`" not in text
+    inside = ev.render_report(ev.score([R2], {}), {}, raw_path=ev.RAW_PATH.parent / "routing_raw_run2.jsonl")
+    assert "Raw results: `eval/results/routing_raw_run2.jsonl`" in inside  # repo files shown relative
+
+
+def test_prompt_problems_check_then_tool_and_note():
+    assert ev.prompt_problems([R19, {**R2, "note": "fine"}]) == []
+    problems = ev.prompt_problems([{**R19, "then_tool": "lookup"}, {**R2, "note": 5}])
+    assert problems == ["R19: unknown then_tool 'lookup'", "R2: note must be text"]
+
+
 def test_estimate_mentions_free_tier():
     text = ev.request_estimate(10)
     assert "about 20 Gemini requests" in text and "20 requests a day" in text
@@ -413,13 +602,25 @@ def test_routing_fixture_is_valid():
     assert len({p["prompt_id"] for p in prompts}) == len(prompts) == 20
     assert [p["prompt_id"] for p in prompts] == [f"R{i}" for i in range(1, 21)]
     assert ev.prompt_problems(prompts) == []
+    by_id = {p["prompt_id"]: p for p in prompts}
+    recommend_ids = []
     for p in prompts:
-        if p["expected_tool"] == "recommend":
-            args = p["expected_args"]
-            assert set(args) <= {"budget_max", "household", "housing_preference", "tags_contains"}
+        args = p.get("expected_args") or {}
+        assert set(p) <= {"prompt_id", "user_prompt", "expected_tool", "expected_args", "must_not_call",
+                          "then_tool", "note"}, p["prompt_id"]
+        if ev.args_tool(p) == "recommend":
+            recommend_ids.append(p["prompt_id"])
+            assert set(args) == {"budget_max", "household", "housing_preference", "tags_exact"}, p["prompt_id"]
             assert args["household"] in tool_contracts.HOUSEHOLDS
             assert args["housing_preference"] in tool_contracts.HOUSING_PREFERENCES
-            assert set(args["tags_contains"]) <= set(tool_contracts.TAGS)
+            assert set(args["tags_exact"]) <= set(tool_contracts.TAGS)
+        if p["expected_tool"] == "crowd_themes":
+            assert set(args) == {"zip_code", "theme"} and args["theme"] in tool_contracts.CROWD_THEMES, p["prompt_id"]
+    assert recommend_ids == ["R1", "R6", "R17", "R18", "R19"]
+    assert by_id["R19"]["expected_tool"] == "ethics" and by_id["R19"]["then_tool"] == "recommend"
+    assert by_id["R4"]["expected_args"] == {} and "Not a miss" in by_id["R4"]["note"]
+    assert {pid: by_id[pid]["expected_args"]["theme"] for pid in ("R3", "R13", "R14", "R20")} == {
+        "R3": "transit", "R13": "quiet", "R14": "pet_friendly", "R20": "walkable"}
 
 
 def test_prompt_problems_are_reported():

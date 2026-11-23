@@ -3,9 +3,11 @@
 Metric definitions follow EVAL_FRAMEWORK.md (Layer 2):
 
     Tool selection accuracy   % scored prompts where the expected tool was called
-                              (and no must_not_call tool was, and ethics came before recommend)
-    Tool argument accuracy    % recommend prompts with expected_args whose first recommend
-                              call has the expected budget, household, housing preference and tags
+                              (and no must_not_call tool was, then_tool came after it if set,
+                              and ethics came before recommend)
+    Tool argument accuracy    % prompts whose args target (then_tool, else expected_tool) is
+                              recommend, where every successful recommend call has the expected
+                              budget, household, housing preference and tags
 
 Each prompt runs in a fresh chat through scripts/agent.py, so it uses real
 Gemini requests (about 2 per prompt; the free tier allows 20 a day). Every
@@ -48,7 +50,11 @@ REPORT_PATH = _ROOT / "eval" / "results" / "routing_eval.md"
 TOOL_TARGET = 0.90
 ARGS_TARGET = 0.85
 ROUND_CAP_MARK = "[stopped: too many tool calls"
+EMPTY_REPLY_MARK = "[empty reply from Gemini]"  # what agent.ask() puts in place of an empty reply
 IGNORED_ARGS = {"k"}
+# Statuses that mean the call did not really run. Any other status (ok, no_snippets,
+# no_areas_within_budget, ...) is a real call whose arguments are checked.
+BLOCKED_STATUSES = {"invalid_input", "tool_error", "contract_violation"}
 
 # Gemini requests per prompt: the first message, plus one per round of tool calls.
 LIKELY_REQUESTS = 2   # one tool round, then the answer
@@ -76,6 +82,9 @@ def tool_miss_reason(prompt: dict, calls: list[dict]) -> str | None:
     forbidden = [t for t in prompt.get("must_not_call", []) if t in names]
     if forbidden:
         return "called must_not_call: " + ", ".join(forbidden)
+    then = prompt.get("then_tool")
+    if then and then not in names[names.index(expected) + 1:]:
+        return f"then_tool not called after {expected}"
     if "ethics" in names and "recommend" in names and names.index("ethics") > names.index("recommend"):
         return "ethics called after recommend"
     return None
@@ -93,19 +102,12 @@ def _same(got: Any, want: Any) -> bool:
     return got == want
 
 
-def args_mismatches(prompt: dict, calls: list[dict]) -> list[str] | None:
-    """Expected args that the first call to the expected tool got wrong.
+def args_tool(prompt: dict) -> str:
+    """The tool whose arguments expected_args describe: then_tool if set, else expected_tool."""
+    return prompt.get("then_tool") or prompt["expected_tool"]
 
-    None if the prompt has no expected_args. tags_contains means args["tags"]
-    holds every listed tag (extra tags are fine). Extra args and k are ignored.
-    """
-    expected = prompt.get("expected_args") or {}
-    if not expected:
-        return None
-    first = next((c for c in calls if c["tool"] == prompt["expected_tool"]), None)
-    if first is None:
-        return [f"{prompt['expected_tool']} not called"]
-    args = first.get("args") or {}
+
+def _call_mismatches(expected: dict, args: dict) -> list[str]:
     wrong = []
     for key, want in expected.items():
         if key in IGNORED_ARGS:
@@ -116,10 +118,40 @@ def args_mismatches(prompt: dict, calls: list[dict]) -> list[str] | None:
             missing = [t for t in want if t not in tags]
             if missing:
                 wrong.append(f"tags missing {missing} (got {args.get('tags')!r})")
+        elif key == "tags_exact":
+            tags = args.get("tags")
+            if not isinstance(tags, (list, tuple)) or set(tags) != set(want):
+                wrong.append(f"tags={tags!r}, expected exactly {sorted(want)!r}")
         elif key not in args:
             wrong.append(f"{key} missing")
         elif not _same(args[key], want):
             wrong.append(f"{key}={args[key]!r}, expected {want!r}")
+    return wrong
+
+
+def args_mismatches(prompt: dict, calls: list[dict]) -> list[str] | None:
+    """Expected args that the calls to the target tool (then_tool, else expected_tool) got wrong.
+
+    Every real call must match. Blocked calls (status invalid_input, tool_error or
+    contract_violation) are ignored; if every call was blocked, the first call is
+    checked. None if the prompt has no expected_args.
+
+    tags_exact means args["tags"] is exactly the listed set (order ignored).
+    tags_contains means it holds every listed tag (extra tags are fine).
+    Extra args and k are ignored.
+    """
+    expected = prompt.get("expected_args") or {}
+    if not expected:
+        return None
+    target = args_tool(prompt)
+    target_calls = [c for c in calls if c["tool"] == target]
+    if not target_calls:
+        return [f"{target} not called"]
+    checked = [c for c in target_calls if c.get("status") not in BLOCKED_STATUSES] or target_calls[:1]
+    wrong = []
+    for i, c in enumerate(checked, start=1):
+        prefix = f"{target} call {i}: " if len(checked) > 1 else ""
+        wrong += [prefix + w for w in _call_mismatches(expected, c.get("args") or {})]
     return wrong
 
 
@@ -143,6 +175,7 @@ def score(prompts: list[dict], records: dict[str, dict]) -> dict:
             "prompt_id": pid,
             "expected_tool": prompt["expected_tool"],
             "must_not_call": prompt.get("must_not_call", []),
+            "then_tool": prompt.get("then_tool"),
             "calls": [],
             "outcome": "not_run",
             "tool_ok": None,
@@ -150,17 +183,20 @@ def score(prompts: list[dict], records: dict[str, dict]) -> dict:
             "args_ok": None,
             "args_wrong": None,
             "error": None,
+            "grounding_issues": None,  # None: not recorded (not run, or saved before this field existed)
         }
         if record is not None:
             row["outcome"] = record["outcome"]
             row["calls"] = record.get("calls", [])
             row["error"] = record.get("error")
+            if "grounding_issues" in record:
+                row["grounding_issues"] = len(record["grounding_issues"] or [])
             if record["outcome"] != "error":
                 row["tool_reason"] = tool_miss_reason(prompt, row["calls"])
                 row["tool_ok"] = row["tool_reason"] is None
                 row["args_wrong"] = args_mismatches(prompt, row["calls"])
                 row["args_ok"] = None if row["args_wrong"] is None else not row["args_wrong"]
-        row["counts_for_args"] = prompt["expected_tool"] == "recommend" and bool(prompt.get("expected_args"))
+        row["counts_for_args"] = args_tool(prompt) == "recommend" and bool(prompt.get("expected_args"))
         rows.append(row)
 
     scored = [r for r in rows if r["outcome"] not in {"error", "not_run"}]
@@ -194,6 +230,14 @@ def score(prompts: list[dict], records: dict[str, dict]) -> dict:
         ],
         "errors": [{"prompt_id": r["prompt_id"], "error": r["error"]} for r in rows if r["outcome"] == "error"],
         "not_run": [r["prompt_id"] for r in rows if r["outcome"] == "not_run"],
+        "empty_replies": [
+            {"prompt_id": r["prompt_id"], "called": called_tools(r["calls"])}
+            for r in rows if r["outcome"] == "empty_reply"
+        ],
+        "grounding_total": sum(r["grounding_issues"] or 0 for r in scored),
+        "grounding_checked": sum(1 for r in scored if r["grounding_issues"] is not None),  # [] counts: checked, no issues
+        "grounding_prompts": sum(1 for r in scored if r["grounding_issues"]),
+        "grounding_unrecorded": sum(1 for r in scored if r["grounding_issues"] is None),
     }
 
 
@@ -221,7 +265,25 @@ def _cell(text: Any) -> str:
     return str(text).replace("|", "\\|").replace("\n", " ")
 
 
-def render_report(result: dict, records: dict[str, dict], now: datetime | None = None) -> str:
+def _display_path(path: Path) -> str:
+    """Path relative to the repo root when it is inside it, else as given."""
+    try:
+        return Path(path).resolve().relative_to(_ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _grounding_text(result: dict) -> str:
+    text = (f"Grounding check: {result['grounding_total']} issue(s) across {result['grounding_checked']} "
+            f"checked prompt(s), {result['grounding_prompts']} with issues")
+    if result["grounding_unrecorded"]:
+        text += f"; not recorded for {result['grounding_unrecorded']} (saved before this field existed)"
+    return text + "."
+
+
+def render_report(
+    result: dict, records: dict[str, dict], now: datetime | None = None, raw_path: Path = RAW_PATH
+) -> str:
     now = now or datetime.now(timezone.utc)
     models = sorted({r.get("model", "?") for r in records.values()}) or ["(none run)"]
     total = len(result["rows"])
@@ -236,7 +298,7 @@ def render_report(result: dict, records: dict[str, dict], now: datetime | None =
         "",
         f"Prompts: {total} in `eval/agent_routing_prompts.json`; {result['scored']} scored, "
         f"{len(result['errors'])} error, {len(result['not_run'])} not run yet. "
-        "Raw results: `eval/results/routing_raw.jsonl` (latest result per prompt is scored).",
+        f"Raw results: `{_display_path(raw_path)}` (latest result per prompt is scored).",
         "",
         "| Metric | Result | Target | Met |",
         "|--------|--------|--------|-----|",
@@ -247,6 +309,8 @@ def render_report(result: dict, records: dict[str, dict], now: datetime | None =
         "",
         "A tool call counts even if it came back `invalid_input` (the model still chose it). "
         "Error and not-run prompts are left out of both metrics.",
+        "",
+        _grounding_text(result),
         "",
         "## Per expected tool",
         "",
@@ -280,20 +344,28 @@ def render_report(result: dict, records: dict[str, dict], now: datetime | None =
         for e in result["errors"]:
             lines.append(f"| {e['prompt_id']} | {_cell(e['error'])[:300]} |")
 
+    if result["empty_replies"]:
+        lines += ["", "## Empty replies (still scored for routing)", "", "| Prompt | Called |", "|--------|--------|"]
+        for e in result["empty_replies"]:
+            lines.append(f"| {e['prompt_id']} | {' → '.join(e['called']) or 'none'} |")
+
     lines += [
         "",
         "## Per prompt",
         "",
-        "| Prompt | Expected | Called | Tool ok | Args ok | Outcome |",
-        "|--------|----------|--------|---------|---------|---------|",
+        "| Prompt | Expected | Called | Tool ok | Args ok | Grounding issues | Outcome |",
+        "|--------|----------|--------|---------|---------|------------------|---------|",
     ]
     for r in result["rows"]:
         expected = f"`{r['expected_tool']}`"
+        if r.get("then_tool"):
+            expected += f" then `{r['then_tool']}`"
         if r["must_not_call"]:
             expected += " (not " + ", ".join(r["must_not_call"]) + ")"
+        grounding = "–" if r["grounding_issues"] is None else r["grounding_issues"]
         lines.append(
             f"| {r['prompt_id']} | {expected} | {_cell(_calls_text(r['calls']))} | "
-            f"{_yes_no(r['tool_ok'])} | {_yes_no(r['args_ok'])} | {r['outcome']} |"
+            f"{_yes_no(r['tool_ok'])} | {_yes_no(r['args_ok'])} | {grounding} | {r['outcome']} |"
         )
     lines.append("")
     return "\n".join(lines)
@@ -322,6 +394,10 @@ def prompt_problems(prompts: list[dict]) -> list[str]:
         for t in p.get("must_not_call", []):
             if t not in tools:
                 problems.append(f"{pid}: unknown must_not_call tool {t!r}")
+        if "then_tool" in p and p["then_tool"] not in tools:
+            problems.append(f"{pid}: unknown then_tool {p['then_tool']!r}")
+        if "note" in p and not isinstance(p["note"], str):
+            problems.append(f"{pid}: note must be text")
         if not isinstance(p.get("expected_args", {}), dict):
             problems.append(f"{pid}: expected_args must be an object")
     return problems
@@ -421,10 +497,17 @@ def run_prompt(prompt: dict, new_chat: Callable[[], Any] | None = None) -> dict:
         chat.send_message = counted_send
         turn = agent.ask(chat, prompt["user_prompt"])
     except Exception as exc:  # a Gemini failure is recorded, not scored
-        record.update(outcome="error", error=f"{type(exc).__name__}: {exc}", reply=None)
+        record.update(outcome="error", error=f"{type(exc).__name__}: {exc}", reply=None, grounding_issues=[])
     else:
-        outcome = "round_cap" if ROUND_CAP_MARK in turn["reply"] else "ok"
-        record.update(outcome=outcome, error=None, reply=turn["reply"])
+        reply = turn["reply"]
+        if ROUND_CAP_MARK in reply:
+            outcome = "round_cap"
+        elif not reply.strip() or reply.strip() == EMPTY_REPLY_MARK:
+            outcome = "empty_reply"
+        else:
+            outcome = "ok"
+        record.update(outcome=outcome, error=None, reply=reply,
+                      grounding_issues=list(turn.get("grounding_issues") or []))
     finally:
         agent._run_tool = real_run_tool
     record.update(calls=calls, gemini_requests=requests)
@@ -468,7 +551,7 @@ def write_report(prompts: list[dict], raw_path: Path = RAW_PATH, report_path: Pa
     records = load_records(raw_path)
     result = score(prompts, records)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(render_report(result, records), encoding="utf-8")
+    report_path.write_text(render_report(result, records, raw_path=raw_path), encoding="utf-8")
     return result
 
 
@@ -538,7 +621,8 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"Tool selection accuracy: {_pct(result['tool_accuracy'])} ({result['tool_hits']}/{result['scored']}), "
         f"argument accuracy: {_pct(result['args_accuracy'])} ({result['args_hits']}/{result['args_scored']}); "
-        f"{len(result['errors'])} error, {len(result['not_run'])} not run. Wrote {args.out}"
+        f"{len(result['errors'])} error, {len(result['empty_replies'])} empty reply, {len(result['not_run'])} not run; "
+        f"{result['grounding_total']} grounding issue(s). Wrote {args.out}"
     )
     return 0
 
