@@ -529,7 +529,18 @@ def ask(chat, user_text: str) -> dict:
     # check allows anything any tool returned so far in this conversation.
     earlier = _CHAT_CALLS.setdefault(id(chat), [])
     issues = grounding_issues(reply, earlier + calls, user_text)
+
+    # Don't show a demo option if its label or availability claim is wrong.
+    synthetic_issues = synthetic_label_issues(reply, earlier + calls)
+
+    if synthetic_issues:
+        reply = (
+            "I can't present that demo option as an available apartment. "
+            "Synthetic options are NOT A REAL LISTING and do not confirm availability."
+        )
+
     earlier.extend(calls)
+
     return {
         "user": user_text,
         "reply": reply,

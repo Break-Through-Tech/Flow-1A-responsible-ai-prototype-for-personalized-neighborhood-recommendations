@@ -249,6 +249,213 @@ def test_malformed_synthetic_tool_results():
 
         assert isinstance(issues, list)
 
+
+def test_synthetic_option_grounding_stress_cases():
+    """Check that demo options cannot be shown as real housing."""
+    from scripts import agent
+
+    calls = [{
+        "tool": "demo",
+        "args": {},
+        "result": {
+            "status": "ok",
+            "options": [
+                {"option_id": "SYN-33132", "disclaimer": LABEL},
+                {"option_id": "SYN-33139", "disclaimer": LABEL},
+            ],
+        },
+    }]
+
+    cases = [
+        ("SYN-33132 — NOT A REAL LISTING.", False),
+        ("SYN-33132 is a demo apartment.", True),
+        ("SYN-33132 — NOT A REAL LISTING.\nSYN-33139 is a demo.", True),
+        ("SYN-33132 — NOT A REAL LISTING. SYN-33139 is a demo.", True),
+        ("SYN-33132 — NOT A REAL LISTING.\nSYN-33132 is a demo.", True),
+        ("SYN-33132 — NOT A REAL LISTING. This apartment is available now.", True),
+        ("SYN-33132 — NOT A REAL LISTING. This apartment is not available for rent.", False),
+        ("SYN-33132 — NOT A REAL LISTING. This apartment isn't available for rent.", False),
+        ("SYN-33132 — NOT A REAL LISTING. You can book this apartment today.", True),
+        ("SYN-33132 — NOT A REAL LISTING. Move in tomorrow!", True),
+        ("SYN-99999 — NOT A REAL LISTING.", True),
+        ("SYN-33132-EXTRA — NOT A REAL LISTING.", True),
+        ("I can compare ZIP codes using your preferences.", False),
+    ]
+
+    for reply, should_flag in cases:
+        issues = agent.synthetic_label_issues(reply, calls)
+
+        assert bool(issues) == should_flag, (
+            f"Unexpected result for: {reply}\nIssues: {issues}"
+        )
+
+
+def test_agent_blocks_unsafe_synthetic_reply():
+    """Check that the agent replaces an unsafe demo listing response."""
+    from google import genai
+    from google.genai import types
+    from scripts import agent
+
+    # Create a fake Gemini answer.
+    response = types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(
+                content=types.Content(
+                    role="model",
+                    parts=[
+                        types.Part(
+                            text="SYN-33132 is available now."
+                        )
+                    ],
+                )
+            )
+        ]
+    )
+
+    # Simulate a tool result from an earlier chat turn.
+    demo_call = {
+        "tool": "demo",
+        "args": {},
+        "result": {
+            "status": "ok",
+            "options": [
+                {
+                    "option_id": "SYN-33132",
+                    "disclaimer": "NOT A REAL LISTING — synthetic demo only.",
+                }
+            ],
+        },
+    }
+
+    saved_client = agent._CLIENT
+    agent._CLIENT = genai.Client(api_key="offline-test")
+
+    try:
+        chat = agent.new_chat()
+
+        # Make the fake tool result available to the grounding checker.
+        agent._CHAT_CALLS[id(chat)] = [demo_call]
+
+        # Return our fake response without calling Gemini.
+        chat._modules._generate_content = (
+            lambda model, contents, config: response
+        )
+
+        turn = agent.ask(chat, "Tell me about that demo option.")
+
+    finally:
+        agent._CHAT_CALLS.pop(id(chat), None)
+        agent._CHAT_USER_TEXT.pop(id(chat), None)
+        agent._CLIENT = saved_client
+
+    # The unsafe answer should not be shown unchanged.
+    assert turn["reply"] != "SYN-33132 is available now."
+
+    # The replacement must clearly explain that it is not real.
+    assert "NOT A REAL LISTING" in turn["reply"]
+    assert "do not confirm availability" in turn["reply"]
+
+    # Keep the original problem in the grounding report.
+    assert any(
+        "SYN-33132" in issue
+        for issue in turn["grounding_issues"]
+    )
+
+
+def test_agent_keeps_safe_synthetic_reply():
+    """A correctly labeled demo response should stay unchanged."""
+    from google import genai
+    from google.genai import types
+    from scripts import agent
+
+    reply = "SYN-33132 — NOT A REAL LISTING — synthetic demo only."
+
+    response = types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(
+                content=types.Content(
+                    role="model",
+                    parts=[types.Part(text=reply)],
+                )
+            )
+        ]
+    )
+
+    demo_call = {
+        "tool": "demo",
+        "args": {},
+        "result": {
+            "status": "ok",
+            "options": [
+                {
+                    "option_id": "SYN-33132",
+                    "disclaimer": "NOT A REAL LISTING — synthetic demo only.",
+                }
+            ],
+        },
+    }
+
+    saved_client = agent._CLIENT
+    agent._CLIENT = genai.Client(api_key="offline-test")
+
+    try:
+        chat = agent.new_chat()
+        agent._CHAT_CALLS[id(chat)] = [demo_call]
+        chat._modules._generate_content = (
+            lambda model, contents, config: response
+        )
+
+        turn = agent.ask(chat, "Tell me about that demo option.")
+
+    finally:
+        agent._CHAT_CALLS.pop(id(chat), None)
+        agent._CHAT_USER_TEXT.pop(id(chat), None)
+        agent._CLIENT = saved_client
+
+    # A safe answer should not be replaced.
+    assert turn["reply"] == reply
+    assert turn["grounding_issues"] == []
+
+
+def test_agent_keeps_normal_neighborhood_reply():
+    """Normal neighborhood answers should not need synthetic labels."""
+    from google import genai
+    from google.genai import types
+    from scripts import agent
+
+    reply = "I can compare neighborhoods using your budget and preferences."
+
+    response = types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(
+                content=types.Content(
+                    role="model",
+                    parts=[types.Part(text=reply)],
+                )
+            )
+        ]
+    )
+
+    saved_client = agent._CLIENT
+    agent._CLIENT = genai.Client(api_key="offline-test")
+
+    try:
+        chat = agent.new_chat()
+        chat._modules._generate_content = (
+            lambda model, contents, config: response
+        )
+
+        turn = agent.ask(chat, "Can you help me compare neighborhoods?")
+
+    finally:
+        agent._CHAT_CALLS.pop(id(chat), None)
+        agent._CHAT_USER_TEXT.pop(id(chat), None)
+        agent._CLIENT = saved_client
+
+    assert turn["reply"] == reply
+    assert turn["grounding_issues"] == []
+
+
 if __name__ == "__main__":
     tests = [
         (name, fn)
