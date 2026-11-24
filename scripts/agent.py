@@ -210,6 +210,120 @@ TOOLS = [schema, area_stats, crowd_themes, recommend, ethics]
 _ZIP = re.compile(r"\b\d{5}\b")
 _DOLLARS = re.compile(r"\$\s?(\d[\d,]*(?:\.\d+)?)")
 _URL = re.compile(r"https?://\S+|www\.\S+", re.I)
+SYNTHETIC_LABEL = "NOT A REAL LISTING"
+
+
+def synthetic_label_issues(reply, calls):
+    """Check that demo options are real tool results and clearly labeled."""
+    issues = []
+    option_ids = set()
+
+    # Collect synthetic option IDs from tool results.
+    for call in calls:
+        if not isinstance(call, dict):
+            continue
+
+        result = call.get("result")
+        if not isinstance(result, dict):
+            continue
+
+        options = result.get("options", [])
+        if not isinstance(options, list):
+            continue
+
+        for option in options:
+            if not isinstance(option, dict):
+                continue
+
+            option_id = option.get("option_id")
+            if not isinstance(option_id, str) or not option_id.startswith("SYN-"):
+                continue
+
+            option_ids.add(option_id)
+
+            # The tool itself must label every synthetic option.
+            disclaimer = option.get("disclaimer", "")
+            if not isinstance(disclaimer, str) or SYNTHETIC_LABEL not in disclaimer:
+                issues.append(f"Synthetic option {option_id} has no tool label")
+
+    # Find every synthetic option ID mentioned in the reply.
+    pattern = re.compile(r"(?<![\w-])SYN-[A-Za-z0-9-]+(?![\w-])")
+    matches = list(pattern.finditer(reply))
+
+    for index, match in enumerate(matches):
+        option_id = match.group()
+
+        # The agent cannot invent a demo option.
+        if option_id not in option_ids:
+            issues.append(f"Synthetic option {option_id} was not returned by any tool")
+            continue
+
+        # Keep each option separate from the next one.
+        start = matches[index - 1].end() if index else 0
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(reply)
+
+        before = reply[start:match.start()]
+        after = reply[match.end():end]
+
+        # A warning before the ID only counts on the same line.
+        before_text = before.split("\n")[-1] if index == 0 else ""
+        after_text = after[:100]
+
+        has_label = (
+            SYNTHETIC_LABEL in before_text
+            or SYNTHETIC_LABEL in after_text
+        )
+
+        if not has_label:
+            issues.append(
+                f"Synthetic option {option_id} is missing its NOT A REAL LISTING label"
+            )
+
+        # Check the text describing this option for availability claims.
+        description = after.lower()
+
+        availability_patterns = [
+            r"\bis available now\b",
+            r"\bavailable for rent\b",
+            r"\bbook this apartment\b",
+            r"\bcan book this apartment\b",
+            r"\bapply for this apartment\b",
+            r"\bready to move in\b",
+            r"\bmove in (today|tomorrow|now)\b",
+            r"\bavailable immediately\b",
+        ]
+
+        negative_patterns = [
+            r"\bnot available\b",
+            r"\bisn't available\b",
+            r"\bis not available\b",
+            r"\bno availability\b",
+            r"\bavailability is not confirmed\b",
+            r"\bcan't book\b",
+            r"\bcannot book\b",
+        ]
+
+        for pattern_text in availability_patterns:
+            for found in re.finditer(pattern_text, description):
+                # Check whether this claim is actually a negative statement.
+                sentence_start = max(
+                    description.rfind(".", 0, found.start()) + 1,
+                    description.rfind("\n", 0, found.start()) + 1,
+                )
+                sentence = description[sentence_start:found.end()]
+
+                if any(re.search(negative, sentence) for negative in negative_patterns):
+                    continue
+
+                issues.append(
+                    f"Synthetic option {option_id} is presented as available housing"
+                )
+                break
+            else:
+                continue
+            break
+
+    return issues
 
 
 def _numbers_in(value: Any, out: set[str]) -> None:
@@ -258,6 +372,8 @@ def grounding_issues(reply: str, calls: list[dict], user_text: str = "") -> list
         order = [z for _, z in mentioned]
         if order != [z for z in ranked if z in order]:
             issues.append(f"recommendations listed out of rank order: {order} vs ranked {ranked}")
+    # Also check that synthetic options keep their warning labels.
+    issues.extend(synthetic_label_issues(reply, calls))
     return issues
 
 
