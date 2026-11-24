@@ -241,11 +241,14 @@ def synthetic_label_issues(reply, calls):
 
             option_ids.add(option_id)
 
-            # The tool itself must label every synthetic option.
-            disclaimer = option.get("disclaimer", "")
-            if not isinstance(disclaimer, str) or SYNTHETIC_LABEL not in disclaimer:
-                issues.append(f"Synthetic option {option_id} has no tool label")
-
+            # Only check the tool label if this option appears in the reply.
+            if re.search(
+                rf"(?<![\w-]){re.escape(option_id)}(?![\w-])",
+                reply,
+            ):
+                disclaimer = option.get("disclaimer", "")
+                if not isinstance(disclaimer, str) or SYNTHETIC_LABEL not in disclaimer:
+                    issues.append(f"Synthetic option {option_id} has no tool label")
     # Find every synthetic option ID mentioned in the reply.
     pattern = re.compile(r"(?<![\w-])SYN-[A-Za-z0-9-]+(?![\w-])")
     matches = list(pattern.finditer(reply))

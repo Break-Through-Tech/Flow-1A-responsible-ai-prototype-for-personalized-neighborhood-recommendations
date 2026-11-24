@@ -506,6 +506,34 @@ def test_mixed_availability_claims():
         )
 
 
+def test_unused_synthetic_option_does_not_block_reply():
+    """Only flag missing labels when the option is shown."""
+    from scripts import agent
+
+    calls = [{
+        "tool": "demo",
+        "args": {},
+        "result": {
+            "status": "ok",
+            "options": [{
+                "option_id": "SYN-33132",
+                "disclaimer": "",
+            }],
+        },
+    }]
+
+    # An unrelated answer should be allowed.
+    normal = "I can help you compare neighborhoods."
+    assert agent.synthetic_label_issues(normal, calls) == []
+
+    # Showing the unlabeled option should still be flagged.
+    unsafe = "SYN-33132 is available now."
+    issues = agent.synthetic_label_issues(unsafe, calls)
+
+    assert any("no tool label" in issue for issue in issues)
+    assert any("available housing" in issue for issue in issues)
+
+
 if __name__ == "__main__":
     tests = [
         (name, fn)
