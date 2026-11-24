@@ -1,0 +1,113 @@
+{
+  "conversations_total": 17,
+  "conversations_scored": 7,
+  "replies": 9,
+  "replies_with_claims": 9,
+  "replies_without_claims": [],
+  "grounded_replies": 7,
+  "grounding_rate": 0.7777777777777778,
+  "claims": 148,
+  "grounded_claims": 145,
+  "claim_rate": 0.9797297297297297,
+  "by_type": {
+    "area_name": {
+      "claims": 21,
+      "grounded": 21
+    },
+    "money": {
+      "claims": 58,
+      "grounded": 58
+    },
+    "number": {
+      "claims": 33,
+      "grounded": 33
+    },
+    "percent": {
+      "claims": 1,
+      "grounded": 1
+    },
+    "qualitative": {
+      "claims": 3,
+      "grounded": 0
+    },
+    "ranking_order": {
+      "claims": 4,
+      "grounded": 4
+    },
+    "zip": {
+      "claims": 28,
+      "grounded": 28
+    }
+  },
+  "target": 0.95,
+  "passes": false,
+  "ungrounded": [
+    {
+      "conversation_id": "G3",
+      "turn": 2,
+      "prompt": "Which of those is the cheapest? Sort them by price.",
+      "claim": "South Kendall (33177) has the lowest reference rent range on this list",
+      "type": "qualitative",
+      "reason": "manual: only its lower estimate ($2,174) is lowest; West Kendall 33196's upper estimate ($2,570) is below South Kendall's ($2,786)",
+      "sentence": "South Kendall (33177) has the lowest reference rent range on this list",
+      "source": "manual"
+    },
+    {
+      "conversation_id": "G7",
+      "turn": 1,
+      "prompt": "Show me every stat you have for ZIP 33109, including rent and home value.",
+      "claim": "91 moved from a different county in the same state",
+      "type": "qualitative",
+      "reason": "manual: 91 is B07003_008E, which schema describes as moved within the same county (male only); the different-county value (B07003_010E) is 0",
+      "sentence": "91 moved from a different county in the same state",
+      "source": "manual"
+    },
+    {
+      "conversation_id": "G7",
+      "turn": 1,
+      "prompt": "Show me every stat you have for ZIP 33109, including rent and home value.",
+      "claim": "0 moved from abroad",
+      "type": "qualitative",
+      "reason": "manual: no column reports moves from abroad; 0 is B07003_010E, moved from a different county within the same state",
+      "sentence": "0 moved from abroad",
+      "source": "manual"
+    }
+  ],
+  "manual_overrides": [
+    {
+      "conversation_id": "G3",
+      "turn": 2,
+      "claim": "South Kendall (33177) has the lowest reference rent range on this list",
+      "grounded": false,
+      "reason": "manual: only its lower estimate ($2,174) is lowest; West Kendall 33196's upper estimate ($2,570) is below South Kendall's ($2,786)"
+    },
+    {
+      "conversation_id": "G7",
+      "turn": 1,
+      "claim": "91 moved from a different county in the same state",
+      "grounded": false,
+      "reason": "manual: 91 is B07003_008E, which schema describes as moved within the same county (male only); the different-county value (B07003_010E) is 0"
+    },
+    {
+      "conversation_id": "G7",
+      "turn": 1,
+      "claim": "0 moved from abroad",
+      "grounded": false,
+      "reason": "manual: no column reports moves from abroad; 0 is B07003_010E, moved from a different county within the same state"
+    }
+  ],
+  "unmatched_labels": [],
+  "not_run": [
+    "G8",
+    "G9",
+    "G10",
+    "G11",
+    "G12",
+    "G13",
+    "G14",
+    "G15",
+    "G16",
+    "G17"
+  ],
+  "errors": []
+}

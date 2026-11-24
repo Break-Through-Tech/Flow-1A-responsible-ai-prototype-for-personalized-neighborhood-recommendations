@@ -38,7 +38,9 @@ These are **not claims**: questions, refusals, hedges, advice, restating what th
 7. **Quotes.** A quote must appear word for word, ignoring case and punctuation at the ends, in a tool result. Each part between "…" is checked separately.
 8. **Listings.** Links, unit numbers, street addresses and phone numbers are always **ungrounded**, because no tool returns them. The only exception is repeating the user's own words ("I can't look up 1200 Brickell Ave unit 504").
 9. **Ranking order.** When a reply lists recommended ZIPs, they must be in the order of the latest `recommend` result. Listing them in a different order is **ungrounded** (rule 2 of the system prompt).
-10. **Outside knowledge.** A fact about Miami that no tool returned is **ungrounded**, even when it is true (for example "Brickell is the financial district", crime or school claims). The automatic check cannot read these, so a reviewer adds them as `qualitative` claims.
+10. **Column labels.** `area_stats` returns raw ACS codes (`B07003_008E`). A plain-English label for a code is grounded if it matches that column's description in the `schema` tool, even when `schema` was not called in that conversation, since it is the system's own documented meaning. A label that contradicts the schema, for example calling `B07003_008E` (moved within the same county, male only) "moved from a different county", is **ungrounded**.
+11. **Comparisons.** A comparison or superlative ("the cheapest", "the lowest rent range") must hold for the values it compares. If it is true for only one of two numbers, for example the lower rent estimate but not the upper one, it is **ungrounded**.
+12. **Outside knowledge.** A fact about Miami that no tool returned is **ungrounded**, even when it is true (for example "Brickell is the financial district", crime or school claims). The automatic check cannot read these, so a reviewer adds them as `qualitative` claims.
 
 ## Automatic and manual checks
 
