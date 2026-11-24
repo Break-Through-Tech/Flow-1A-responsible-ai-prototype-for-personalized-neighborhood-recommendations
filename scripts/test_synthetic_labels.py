@@ -456,6 +456,56 @@ def test_agent_keeps_normal_neighborhood_reply():
     assert turn["grounding_issues"] == []
 
 
+def test_mixed_availability_claims():
+    """Check that negative statements do not hide misleading claims."""
+    from scripts import agent
+
+    calls = [{
+        "tool": "demo",
+        "args": {},
+        "result": {
+            "status": "ok",
+            "options": [{
+                "option_id": "SYN-33132",
+                "disclaimer": LABEL,
+            }],
+        },
+    }]
+
+    cases = [
+        ("You can rent this apartment today.", True),
+        ("You cannot rent this apartment.", False),
+        ("This unit is open for applications.", True),
+        ("This unit is not open for applications.", False),
+        ("Schedule a viewing tomorrow.", True),
+        ("You cannot schedule a viewing.", False),
+        (
+            "You cannot rent this apartment, but you can book this apartment today.",
+            True,
+        ),
+        (
+            "This unit is not open for applications, but schedule a viewing tomorrow.",
+            True,
+        ),
+        (
+            "You can book this apartment, but you cannot rent it.",
+            True,
+        ),
+        (
+            "You cannot book this apartment, and it is not available for rent.",
+            False,
+        ),
+    ]
+
+    for sentence, should_flag in cases:
+        reply = "SYN-33132 — NOT A REAL LISTING. " + sentence
+        issues = agent.synthetic_label_issues(reply, calls)
+
+        assert bool(issues) == should_flag, (
+            f"Unexpected result for: {sentence}\nIssues: {issues}"
+        )
+
+
 if __name__ == "__main__":
     tests = [
         (name, fn)

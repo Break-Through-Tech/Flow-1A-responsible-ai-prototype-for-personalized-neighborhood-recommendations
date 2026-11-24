@@ -291,6 +291,9 @@ def synthetic_label_issues(reply, calls):
             r"\bready to move in\b",
             r"\bmove in (today|tomorrow|now)\b",
             r"\bavailable immediately\b",
+            r"\b(?:you can|can) rent (?:this|the) (?:apartment|unit|home)\b",
+            r"\bopen for applications\b",
+            r"\bschedule a viewing\b",
         ]
 
         negative_patterns = [
@@ -301,19 +304,38 @@ def synthetic_label_issues(reply, calls):
             r"\bavailability is not confirmed\b",
             r"\bcan't book\b",
             r"\bcannot book\b",
+            r"\bcan't rent\b",
+            r"\bcannot rent\b",
+            r"\bnot open for applications\b",
+            r"\bisn't open for applications\b",
+            r"\bcannot schedule a viewing\b",
+            r"\bcan't schedule a viewing\b",
         ]
 
         for pattern_text in availability_patterns:
             for found in re.finditer(pattern_text, description):
-                # Check whether this claim is actually a negative statement.
+
+                # Find the sentence containing this claim.
                 sentence_start = max(
                     description.rfind(".", 0, found.start()) + 1,
                     description.rfind("\n", 0, found.start()) + 1,
                 )
+
                 sentence = description[sentence_start:found.end()]
 
-                if any(re.search(negative, sentence) for negative in negative_patterns):
+                # Check only the clause containing this claim.
+                clauses = list(re.finditer(r"\b(?:but|however)\b", sentence))
+                claim_start = 0
+
+                for clause in clauses:
+                    claim_start = clause.end()
+
+                claim = sentence[claim_start:]
+
+                # A negative statement should not count as availability.
+                if any(re.search(negative, claim) for negative in negative_patterns):
                     continue
+
 
                 issues.append(
                     f"Synthetic option {option_id} is presented as available housing"
