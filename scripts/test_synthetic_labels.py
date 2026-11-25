@@ -290,6 +290,42 @@ def test_synthetic_option_grounding_stress_cases():
         )
 
 
+def run_fake_agent_reply(reply):
+    """Run one fake agent reply without calling Gemini."""
+    from google import genai
+    from google.genai import types
+    from scripts import agent
+
+    response = types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(
+                content=types.Content(
+                    role="model",
+                    parts=[types.Part(text=reply)],
+                )
+            )
+        ]
+    )
+
+    saved_client = agent._CLIENT
+    agent._CLIENT = genai.Client(api_key="offline-test")
+
+    try:
+        chat = agent.new_chat()
+
+        # Return our test reply instead of calling Gemini.
+        chat._modules._generate_content = (
+            lambda model, contents, config: response
+        )
+
+        return agent.ask(chat, "Tell me about the demo options.")
+
+    finally:
+        agent._CHAT_CALLS.pop(id(chat), None)
+        agent._CHAT_USER_TEXT.pop(id(chat), None)
+        agent._CLIENT = saved_client
+
+
 def test_agent_blocks_unsafe_synthetic_reply():
     """Check that the agent replaces an unsafe demo listing response."""
     from google import genai
@@ -360,7 +396,6 @@ def test_agent_blocks_unsafe_synthetic_reply():
         "SYN-33132" in issue
         for issue in turn["grounding_issues"]
     )
-
 
 def test_agent_keeps_safe_synthetic_reply():
     """A correctly labeled demo response should stay unchanged."""
@@ -533,6 +568,119 @@ def test_unused_synthetic_option_does_not_block_reply():
     assert any("no tool label" in issue for issue in issues)
     assert any("available housing" in issue for issue in issues)
 
+
+def test_known_csv_id_without_tool_call():
+    """A known demo ID should work without a tool call."""
+    from scripts import agent
+
+    reply = "SYN-33127-OWN is NOT A REAL LISTING."
+
+    turn = run_fake_agent_reply(reply)
+
+    assert turn["reply"] == reply
+    assert turn["tool_calls"] == []
+    assert agent.synthetic_label_issues(reply, []) == []
+
+
+def test_lowercase_and_labels_before_options():
+    """Accept lowercase labels and warnings before each option."""
+    from scripts import agent
+
+    replies = [
+        "SYN-33127-OWN is not a real listing.",
+        (
+            "NOT A REAL LISTING: SYN-33127-OWN\n"
+            "NOT A REAL LISTING: SYN-33128-OWN"
+        ),
+    ]
+
+    for reply in replies:
+        assert agent.synthetic_label_issues(reply, []) == []
+
+        turn = run_fake_agent_reply(reply)
+        assert turn["reply"] == reply
+
+
+def test_missing_label_keeps_useful_reply():
+    """Keep the answer and add a warning if only a label is missing."""
+    from scripts import agent
+
+    reply = (
+        "Here are some neighborhood recommendations.\n"
+        "SYN-33127-OWN is a demo option."
+    )
+
+    turn = run_fake_agent_reply(reply)
+
+    # Keep the useful information and label the demo option.
+    assert "Here are some neighborhood recommendations." in turn["reply"]
+    assert "SYN-33127-OWN — NOT A REAL LISTING" in turn["reply"]
+    assert "is a demo option." in turn["reply"]
+    assert "NOT A REAL LISTING" in turn["reply"]
+    assert any(
+        "missing" in issue.lower()
+        for issue in turn["grounding_issues"]
+    )
+
+
+def test_invented_id_gets_clear_message():
+    """Made-up demo IDs should not be presented as real options."""
+    reply = "SYN-99999 is a demo apartment."
+
+    turn = run_fake_agent_reply(reply)
+
+    assert reply not in turn["reply"]
+    assert "couldn't verify" in turn["reply"].lower()
+
+
+def test_false_availability_still_blocked():
+    """A known demo option must not be presented as available housing."""
+    reply = "SYN-33127-OWN — NOT A REAL LISTING. This apartment is available now."
+
+    turn = run_fake_agent_reply(reply)
+
+    assert reply not in turn["reply"]
+    assert "do not confirm availability" in turn["reply"]
+
+def test_known_synthetic_id_does_not_allow_unverified_zip():
+    """A known demo ID should not allow separate unsupported ZIP claims."""
+    from scripts import agent
+
+    known = "SYN-33127-OWN is NOT A REAL LISTING."
+    assert agent.grounding_issues(known, []) == []
+
+    # The same ZIP mentioned separately still needs tool evidence.
+    reply = known + " Try ZIP 33127."
+    issues = agent.grounding_issues(reply, [])
+
+    assert any(
+        "ZIP 33127 was not returned" in issue
+        for issue in issues
+    )
+
+    # Made-up demo IDs should still be flagged.
+    invented = agent.grounding_issues(
+        "SYN-99999 is NOT A REAL LISTING.", []
+    )
+    assert any("SYN-99999" in issue for issue in invented)
+
+def test_repeated_option_only_labels_missing_mention():
+    """Do not add another warning to an already labeled option."""
+    reply = (
+        "SYN-33127-OWN — NOT A REAL LISTING — synthetic demo only.\n"
+        "SYN-33127-OWN is another mention of the same option."
+    )
+
+    turn = run_fake_agent_reply(reply)
+
+    lines = turn["reply"].splitlines()
+
+    # The first mention should stay unchanged.
+    assert lines[0] == "SYN-33127-OWN — NOT A REAL LISTING — synthetic demo only."
+
+    # Only the second mention should get a warning.
+    assert lines[1].startswith("SYN-33127-OWN — NOT A REAL LISTING")
+    assert lines[1].count("NOT A REAL LISTING") == 1
 
 if __name__ == "__main__":
     tests = [
