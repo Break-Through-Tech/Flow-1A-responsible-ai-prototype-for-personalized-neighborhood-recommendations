@@ -31,6 +31,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+import csv
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
@@ -210,6 +211,214 @@ TOOLS = [schema, area_stats, crowd_themes, recommend, ethics]
 _ZIP = re.compile(r"\b\d{5}\b")
 _DOLLARS = re.compile(r"\$\s?(\d[\d,]*(?:\.\d+)?)")
 _URL = re.compile(r"https?://\S+|www\.\S+", re.I)
+SYNTHETIC_LABEL = "NOT A REAL LISTING"
+
+def load_synthetic_ids():
+    """Read the known demo option IDs from the CSV."""
+    path = _ROOT / "data" / "area_options.csv"
+
+    with path.open(newline="", encoding="utf-8") as file:
+        return {
+            row["option_id"]
+            for row in csv.DictReader(file)
+        }
+
+
+def add_missing_synthetic_labels(reply, calls):
+    """Add a warning only where a demo option is missing one."""
+    issues = synthetic_label_issues(reply, calls)
+
+    # Find the option IDs that need a warning.
+    missing_ids = {
+        issue.split(" is missing")[0].replace("Synthetic option ", "")
+        for issue in issues
+        if " is missing its NOT A REAL LISTING label" in issue
+    }
+
+    # Check each mention separately.
+    pattern = re.compile(r"(?<![\w-])SYN-[A-Za-z0-9-]+(?![\w-])")
+    matches = list(pattern.finditer(reply))
+
+    # Work backward so adding text does not move earlier positions.
+    for index in range(len(matches) - 1, -1, -1):
+        match = matches[index]
+        option_id = match.group()
+
+        if option_id not in missing_ids:
+            continue
+
+        # Check the warning near this specific mention.
+        start = matches[index - 1].end() if index else 0
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(reply)
+
+        before = reply[start:match.start()]
+        after = reply[match.end():end]
+
+        before_text = before.split("\n")[-1]
+        if index > 0:
+            before_text = re.split(r"[.!?]", before_text)[-1]
+
+        after_text = after[:100]
+
+        # Leave mentions that already have a warning unchanged.
+        if (
+            SYNTHETIC_LABEL in before_text.upper()
+            or SYNTHETIC_LABEL in after_text.upper()
+        ):
+            continue
+
+        reply = (
+            reply[:match.end()]
+            + " — NOT A REAL LISTING"
+            + reply[match.end():]
+        )
+
+    return reply
+
+
+def synthetic_label_issues(reply, calls):
+    """Check that demo options are real tool results and clearly labeled."""
+    issues = []
+
+    # Known demo IDs are valid even without a tool call.
+    option_ids = load_synthetic_ids()
+
+    # Collect synthetic option IDs from tool results.
+    for call in calls:
+        if not isinstance(call, dict):
+            continue
+
+        result = call.get("result")
+        if not isinstance(result, dict):
+            continue
+
+        options = result.get("options", [])
+        if not isinstance(options, list):
+            continue
+
+        for option in options:
+            if not isinstance(option, dict):
+                continue
+
+            option_id = option.get("option_id")
+            if not isinstance(option_id, str) or not option_id.startswith("SYN-"):
+                continue
+
+            option_ids.add(option_id)
+
+            # Only check the tool label if this option appears in the reply.
+            if re.search(
+                rf"(?<![\w-]){re.escape(option_id)}(?![\w-])",
+                reply,
+            ):
+                disclaimer = option.get("disclaimer", "")
+                if not isinstance(disclaimer, str) or SYNTHETIC_LABEL not in disclaimer.upper():
+                    issues.append(f"Synthetic option {option_id} has no tool label")
+    # Find every synthetic option ID mentioned in the reply.
+    pattern = re.compile(r"(?<![\w-])SYN-[A-Za-z0-9-]+(?![\w-])")
+    matches = list(pattern.finditer(reply))
+
+    for index, match in enumerate(matches):
+        option_id = match.group()
+
+        # The agent cannot invent a demo option.
+        if option_id not in option_ids:
+            issues.append(f"Synthetic option {option_id} was not returned by any tool")
+            continue
+
+        # Keep each option separate from the next one.
+        start = matches[index - 1].end() if index else 0
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(reply)
+
+        before = reply[start:match.start()]
+        after = reply[match.end():end]
+
+        # A warning before an ID must belong to that option.
+        before_text = before.split("\n")[-1]
+
+        # Don't reuse a warning that follows the previous option.
+        if index > 0:
+            before_text = re.split(r"[.!?]", before_text)[-1]
+
+        after_text = after[:100]
+
+        has_label = (
+            SYNTHETIC_LABEL in before_text.upper()
+            or SYNTHETIC_LABEL in after_text.upper()
+        )
+
+        if not has_label:
+            issues.append(
+                f"Synthetic option {option_id} is missing its NOT A REAL LISTING label"
+            )
+
+        # Check the text describing this option for availability claims.
+        description = after.lower()
+
+        availability_patterns = [
+            r"\bis available now\b",
+            r"\bavailable for rent\b",
+            r"\bbook this apartment\b",
+            r"\bcan book this apartment\b",
+            r"\bapply for this apartment\b",
+            r"\bready to move in\b",
+            r"\bmove in (today|tomorrow|now)\b",
+            r"\bavailable immediately\b",
+            r"\b(?:you can|can) rent (?:this|the) (?:apartment|unit|home)\b",
+            r"\bopen for applications\b",
+            r"\bschedule a viewing\b",
+        ]
+
+        negative_patterns = [
+            r"\bnot available\b",
+            r"\bisn't available\b",
+            r"\bis not available\b",
+            r"\bno availability\b",
+            r"\bavailability is not confirmed\b",
+            r"\bcan't book\b",
+            r"\bcannot book\b",
+            r"\bcan't rent\b",
+            r"\bcannot rent\b",
+            r"\bnot open for applications\b",
+            r"\bisn't open for applications\b",
+            r"\bcannot schedule a viewing\b",
+            r"\bcan't schedule a viewing\b",
+        ]
+
+        for pattern_text in availability_patterns:
+            for found in re.finditer(pattern_text, description):
+
+                # Find the sentence containing this claim.
+                sentence_start = max(
+                    description.rfind(".", 0, found.start()) + 1,
+                    description.rfind("\n", 0, found.start()) + 1,
+                )
+
+                sentence = description[sentence_start:found.end()]
+
+                # Check only the clause containing this claim.
+                clauses = list(re.finditer(r"\b(?:but|however)\b", sentence))
+                claim_start = 0
+
+                for clause in clauses:
+                    claim_start = clause.end()
+
+                claim = sentence[claim_start:]
+
+                # A negative statement should not count as availability.
+                if any(re.search(negative, claim) for negative in negative_patterns):
+                    continue
+
+
+                issues.append(
+                    f"Synthetic option {option_id} is presented as available housing"
+                )
+                break
+            else:
+                continue
+            break
+
+    return issues
 
 
 def _numbers_in(value: Any, out: set[str]) -> None:
@@ -234,13 +443,29 @@ def grounding_issues(reply: str, calls: list[dict], user_text: str = "") -> list
 
     Values the user typed (for example their own budget) are allowed.
     """
-    allowed: set[str] = set()
+
+    # Collect numbers returned by tools or entered by the user.
+    allowed = set()
+
     for call in calls:
         _numbers_in(call["result"], allowed)
+
     _numbers_in(user_text, allowed)
 
+    # Known demo IDs contain ZIP numbers, so allow those ZIPs
+    # only when they appear as part of a known demo ID.
+    known_ids = load_synthetic_ids()
+    reply_without_known_ids = reply
+
+    for option_id in known_ids:
+        reply_without_known_ids = re.sub(
+            rf"(?<![\w-]){re.escape(option_id)}(?![\w-])",
+            "",
+            reply_without_known_ids,
+        )
+
     issues = []
-    for z in dict.fromkeys(_ZIP.findall(reply)):
+    for z in dict.fromkeys(_ZIP.findall(reply_without_known_ids)):
         if z not in allowed:
             issues.append(f"ZIP {z} was not returned by any tool")
     for raw in dict.fromkeys(_DOLLARS.findall(reply)):
@@ -258,6 +483,8 @@ def grounding_issues(reply: str, calls: list[dict], user_text: str = "") -> list
         order = [z for _, z in mentioned]
         if order != [z for z in ranked if z in order]:
             issues.append(f"recommendations listed out of rank order: {order} vs ranked {ranked}")
+    # Also check that synthetic options keep their warning labels.
+    issues.extend(synthetic_label_issues(reply, calls))
     return issues
 
 
@@ -413,7 +640,40 @@ def ask(chat, user_text: str) -> dict:
     # check allows anything any tool returned so far in this conversation.
     earlier = _CHAT_CALLS.setdefault(id(chat), [])
     issues = grounding_issues(reply, earlier + calls, user_text)
+
+    # Don't show a demo option if its label or availability claim is wrong.
+    synthetic_issues = synthetic_label_issues(reply, earlier + calls)
+
+    if synthetic_issues:
+        # Made-up IDs cannot be verified.
+        invented = any(
+            "was not returned by any tool" in issue
+            for issue in synthetic_issues
+        )
+
+        # False availability claims should not be shown.
+        misleading = any(
+            "presented as available housing" in issue
+            for issue in synthetic_issues
+        )
+
+        if invented:
+            reply = (
+                "I couldn't verify that synthetic option ID. "
+                "I can only discuss demo options listed in the project data."
+            )
+        elif misleading:
+            reply = (
+                "I can't present that demo option as an available apartment. "
+                "Synthetic options are NOT A REAL LISTING and do not confirm availability."
+            )
+        else:
+            # Keep the answer and label the demo options directly.
+            reply = add_missing_synthetic_labels(reply, earlier + calls)
+
+
     earlier.extend(calls)
+
     return {
         "user": user_text,
         "reply": reply,

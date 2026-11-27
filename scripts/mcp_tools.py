@@ -157,7 +157,8 @@ ETHICS_RULES = {
         {
             "id": "synthetic_demo_options",
             "description": (
-                "data/area_options.csv contains synthetic listing-style demo cards, not real "
+                "data/area_options.csv contains synthetic listing-style demo cards. "
+                "Every option is labeled NOT A REAL LISTING. These are not real "
                 "apartments or evidence of current availability."
             ),
             "references": ["data/README.md", "data_dictionary.md"],
