@@ -20,7 +20,7 @@ python eval/run_grounding_eval.py --report-only   # re-score saved results, e.g.
 python scripts/test_grounding_eval.py             # offline tests, no API key needed
 ```
 
-Each conversation runs through `scripts/agent.py` and is saved to `results/grounding_raw.jsonl` with the full tool results. Every claim in every reply is checked against the tool results of its conversation (see `grounding_rubric.md`). `results/grounding_eval.md` shows the rate, every ungrounded claim with the prompt that produced it, and each reply for manual review. `results/grounding_eval.json` holds the same summary for other scripts. G14 checks synthetic-option labels and should be rerun (`--only G14 --fresh`) once Task #21 merges.
+Each conversation runs through `scripts/agent.py` and is saved to `results/grounding_raw.jsonl` with the full tool results. Every claim in every reply is checked against the tool results of its conversation (see `grounding_rubric.md`). `results/grounding_eval.md` shows the rate, every ungrounded claim with the prompt that produced it, and each reply for manual review. `results/grounding_eval.json` holds the same summary for other scripts. G14 checks synthetic-option labels. Its saved run is from before Task #21 merged, so rerun it with `--only G14 --fresh`.
 
 Task #18 adds ethics routing cases for demographic targeting, tenant scoring,
 inferred housing preferences, and data limitations. This repository publishes

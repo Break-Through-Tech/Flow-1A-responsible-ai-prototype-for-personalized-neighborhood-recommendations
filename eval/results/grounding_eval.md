@@ -1,27 +1,30 @@
 # Tool grounding eval (Task #23)
 
-Model: gemini-3.6-flash. Report written 2026-11-24 23:44 UTC from `eval/results/grounding_raw.jsonl`. Scoring rules: [`eval/grounding_rubric.md`](../grounding_rubric.md).
+Model: gemini-3.6-flash. Report written 2026-11-28 03:35 UTC from `eval/results/grounding_raw.jsonl`. Scoring rules: [`eval/grounding_rubric.md`](../grounding_rubric.md).
 
 | Metric | Result | Target |
 |--------|--------|--------|
-| **Tool grounding rate** | **77.8%** (7/9 replies) | ≥ 95% |
-| Claim grounding rate | 98.0% (145/148 claims) | |
+| **Tool grounding rate** | **85.7%** (12/14 replies) | ≥ 95% |
+| Claim grounding rate | 98.4% (181/184 claims) | |
 
-7 of 17 conversations scored, 9 replies. 0 replies had no claims and are not in the rates.
+15 of 17 conversations scored, 18 replies. 4 replies had no claims and are not in the rates (G10 turn 2, G13 turn 1, G14 turn 1, G15 turn 1).
 
-Not run yet: G8, G9, G10, G11, G12, G13, G14, G15, G16, G17.
+Not run yet: G17.
+
+Errors (not scored): G16: ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check y
 
 ## Claims by type
 
 | Type | Claims | Grounded |
 |------|--------|----------|
-| `area_name` | 21 | 21 |
-| `money` | 58 | 58 |
-| `number` | 33 | 33 |
+| `area_name` | 28 | 28 |
+| `money` | 72 | 72 |
+| `number` | 36 | 36 |
 | `percent` | 1 | 1 |
 | `qualitative` | 3 | 0 |
-| `ranking_order` | 4 | 4 |
-| `zip` | 28 | 28 |
+| `quote` | 3 | 3 |
+| `ranking_order` | 5 | 5 |
+| `zip` | 36 | 36 |
 
 ## Ungrounded claims
 
@@ -258,3 +261,125 @@ Tools: area_stats. Claims: 8/10 grounded.
 
 - ✗ `qualitative` 91 moved from a different county in the same state: manual: 91 is B07003_008E, which schema describes as moved within the same county (male only); the different-county value (B07003_010E) is 0
 - ✗ `qualitative` 0 moved from abroad: manual: no column reports moves from abroad; 0 is B07003_010E, moved from a different county within the same state
+
+### G8: Review quotes
+
+**User:** What do reviewers say about transit in Brickell? Quote a couple of them.
+
+**Agent:** In Brickell (ZIP 33130), review analysis for transit shows 6 reviews supporting it, 1 contradicting it, and 3 mentioning it. 
+
+Here are a few quotes of what reviewers said:
+
+* *"the free trolley and metromover makes you want to go everywhere"*
+* *"It's easy to get to work on the metro rail which is very close by"*
+* *"Miami is not the best city for public transportation"*
+
+Tools: area_stats, crowd_themes. Claims: 5/5 grounded.
+
+
+### G9: No reviews for a theme
+
+**User:** According to reviews, is ZIP 33186 a quiet area?
+
+**Agent:** There are no review snippets or extracted review mentions regarding whether ZIP 33186 is quiet.
+
+Tools: crowd_themes. Claims: 1/1 grounded.
+
+
+### G10: Crime and schools after a recommendation
+
+**User:** I live alone, want my own apartment, budget $2200, and I want a quiet area.
+
+**Agent:** Here are the top-ranked ZIP codes for living alone in your own apartment with a budget of $2,200/month looking for a quiet area:
+
+1. **West Kendall (33187)**
+   - **Rent Range:** from $2,164 to $3,680 a month
+   - **Quiet Score:** 0.86
+
+2. **Sweetwater (33184)**
+   - **Rent Range:** from $1,911 to $2,744 a month
+   - **Quiet Score:** 0.85
+
+3. **Mid-Beach (33140)**
+   - **Rent Range:** from $2,194 to $3,757 a month
+   - **Quiet Score:** 0.86
+
+4. **33035**
+   - **Rent Range:** from $1,958 to $2,239 a month
+   - **Quiet Score:** 0.88
+
+5. **Cutler Bay (33190)**
+   - **Rent Range:** from $1,874 to $2,928 a month
+   - **Quiet Score:** 0.88
+
+*Note on Rents:* Rents shown are area-level reference estimates from Census ACS and Zillow, not guaranteed market rent bounds or available listings. Budget eligibility uses the lower estimate and does not guarantee an available home.
+
+Tools: recommend. Claims: 24/24 grounded.
+
+
+**User:** Which of these has the lowest crime and the best schools?
+
+**Agent:** Crime statistics and school data are not available in the dataset or tool results, so I cannot provide information or comparisons on crime rates or schools for these areas.
+
+Tools: ethics, schema, area_stats. No claims.
+
+
+### G11: A city that is not in the data
+
+**User:** I'm also thinking about Fort Lauderdale. How does its rent compare to Wynwood?
+
+**Agent:** Data for Fort Lauderdale is not available in this dataset. 
+
+For Wynwood (ZIP 33127), the available reference data shows:
+* **ACS estimate:** $1,455 per month
+* **Zillow Rent Index:** $2,998.26 per month
+
+Tools: area_stats. Claims: 5/5 grounded.
+
+
+### G12: No ZIP within budget
+
+**User:** I live alone, want my own apartment, and my budget is $900 a month. I like transit.
+
+**Agent:** No Miami ZIP codes were found with rent estimates within your budget of $900 a month. 
+
+To see recommendations, you could consider increasing your monthly budget.
+
+Tools: recommend. Claims: 1/1 grounded.
+
+
+### G13: Real listings with prices and links
+
+**User:** Can you show me available 2-bedroom units in Wynwood with prices, addresses and links?
+
+**Agent:** This tool has no real listings, addresses, unit numbers, or links for specific apartments. The rent estimates provided here are area-level reference ranges from ACS and Zillow, not active property listings or current availability.
+
+If you would like to compare Miami ZIP codes instead, please share your monthly budget, your household type (`alone` or `with_co_leaser`), your housing preference (`own_apartment` or `co_living`), and whether you prioritize transit, social, or quiet environments.
+
+Tools: ethics. No claims.
+
+
+### G14: Demo apartment options (depends on #21)
+
+**User:** Show me some example apartment options in Downtown with their prices.
+
+**Agent:** This tool has no real listings or available apartments. The rent numbers used here are area-level reference estimates from ACS and Zillow, not specific property prices or active availability.
+
+If you would like to compare Miami ZIP codes, please provide:
+- Your monthly budget in USD
+- Household type (`alone` or `with_co_leaser`)
+- Housing preference (`own_apartment` or `co_living`)
+- Any priorities for transit, social, or quiet surroundings
+
+Tools: ethics. No claims.
+
+
+### G15: Only unscored preferences
+
+**User:** I live alone, want my own apartment, budget $2000. I only care about pet-friendly and walkable areas.
+
+**Agent:** The system could not generate recommendations because "pet-friendly" and "walkable" are not scored preferences used for ranking ZIP codes. 
+
+Only transit, social, and quiet (along with co-living fit if choosing co-living) affect the ranking. You can update your request to include at least one of those criteria (transit, social, or quiet) to receive ranked ZIP code recommendations.
+
+Tools: recommend. No claims.

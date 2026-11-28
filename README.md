@@ -194,11 +194,13 @@ Use these metrics from day one — not just at the end. They're your GPS, not yo
 | Rec engine | Mean cosine similarity | 0.810 | | |
 | Rec engine | Budget filter pass rate | 100% (20/20) | | |
 | MCP | Tool selection accuracy | Not built yet (October) | | |
-| LLM | Tool grounding rate | Not built yet (October) | | |
+| LLM | Tool grounding rate | | 85.7% (12/14 replies, 15 of 17 conversations); claims 98.4% (181/184) | No (target ≥ 95%) |
 | LLM | Refusal rate | Not built yet (October) | | |
 | NLP | Theme coverage | Not built yet (Task #14, PR #45) | | |
 
 Baseline recorded for Task #10 from the Task #6 recommender, run on commit [`b6a4dfd`](https://github.com/Break-Through-Tech/Flow-1A-responsible-ai-prototype-for-personalized-neighborhood-recommendations/commit/b6a4dfd) of `main`. See [Baseline results](#baseline-results-task-10) for how to reproduce it and what the numbers mean.
+
+Tool grounding rate is from Task #23 ([`eval/results/grounding_eval.md`](eval/results/grounding_eval.md)), scored with the rubric in [`eval/grounding_rubric.md`](eval/grounding_rubric.md). G16 and G17 have not run yet because of the Gemini free-tier quota. All 3 ungrounded claims came from manual review: the agent mislabeled two raw Census columns (G7) and made a comparison that held for only one of two rent estimates (G3).
 
 ---
 
