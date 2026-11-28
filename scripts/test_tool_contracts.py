@@ -61,7 +61,8 @@ WELL_FORMED = [
     ("ethics", {}, "ok"),
     # Empty and no-match results are valid, just empty.
     ("area_stats", {"zip_code": "99999"}, "not_found"),
-    ("crowd_themes", {"zip_code": "99999"}, "no_snippets"),
+    ("crowd_themes", {"zip_code": "99999"}, "not_found"),
+    ("crowd_themes", {"zip_code": "33150"}, "no_snippets"),
     ("crowd_themes", {"zip_code": "33186", "theme": "quiet"}, "no_snippets"),
     ("recommend", {**PROFILE, "budget_max": 1}, "no_areas_within_budget"),
 ]

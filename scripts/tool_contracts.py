@@ -384,6 +384,11 @@ OUTPUT_SCHEMAS: dict[str, dict] = {
             {**_CROWD_COMMON, "count": {"const": 0}, "snippets": {"type": "array", "maxItems": 0}},
             [*_CROWD_COMMON, "snippets"],
         ),
+        _variant(
+            "not_found",
+            {**_CROWD_COMMON, "count": {"const": 0}, "snippets": {"type": "array", "maxItems": 0}},
+            [*_CROWD_COMMON, "snippets"],
+        ),
     ),
     "recommend": _result(
         _variant(

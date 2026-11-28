@@ -374,7 +374,8 @@ def area_stats(zip_code: str | None = None) -> dict:
 def crowd_themes(zip_code: str, theme: str | None = None) -> dict:
     """Review snippets for a ZIP, optionally narrowed to one theme.
 
-    `snippets` filters on the hand-written theme label. `extracted` reads the
+    A ZIP that is not in our data returns "not_found"; a ZIP we cover that has no
+    reviews returns "no_snippets". `snippets` filters on the hand-written theme label. `extracted` reads the
     themes from the review text itself (scripts/theme_extraction.py), with a
     stance per review and the phrase that matched, so the agent can say how
     many reviews speak for or against a theme and quote the evidence.
@@ -388,6 +389,20 @@ def crowd_themes(zip_code: str, theme: str | None = None) -> dict:
     if theme and theme not in set(snippets["theme"].dropna()):
         known = sorted(snippets["theme"].dropna().unique().tolist())
         return _invalid(f"Unknown theme: {theme!r}. Expected one of {known}.")
+    known = set(pd.read_csv(AREA_PATH, dtype={ID_COLUMN: str})[ID_COLUMN]) | set(snippets[ID_COLUMN].dropna())
+    if zip_code not in known:
+        # Not one of our ZIPs and no reviews for it, so "no reviews" would be misleading;
+        # say it is unknown, the same way area_stats does. A ZIP that has reviews is never
+        # hidden, even if it isn't in the area data yet.
+        return {
+            "status": "not_found",
+            "zip_code": zip_code,
+            "theme": theme or None,
+            "available_themes": [],
+            "count": 0,
+            "snippets": [],
+            "extracted": _extracted(snippets.iloc[0:0], theme),
+        }
     rows = snippets[snippets[ID_COLUMN] == zip_code]
     extracted = _extracted(rows, theme)
     available = sorted(rows["theme"].dropna().unique().tolist())
