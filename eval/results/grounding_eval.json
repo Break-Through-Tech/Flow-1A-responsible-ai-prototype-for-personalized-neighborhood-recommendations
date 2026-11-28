@@ -1,0 +1,118 @@
+{
+  "conversations_total": 17,
+  "conversations_scored": 15,
+  "replies": 18,
+  "replies_with_claims": 14,
+  "replies_without_claims": [
+    "G10 turn 2",
+    "G13 turn 1",
+    "G14 turn 1",
+    "G15 turn 1"
+  ],
+  "grounded_replies": 12,
+  "grounding_rate": 0.8571428571428571,
+  "claims": 184,
+  "grounded_claims": 181,
+  "claim_rate": 0.9836956521739131,
+  "by_type": {
+    "area_name": {
+      "claims": 28,
+      "grounded": 28
+    },
+    "money": {
+      "claims": 72,
+      "grounded": 72
+    },
+    "number": {
+      "claims": 36,
+      "grounded": 36
+    },
+    "percent": {
+      "claims": 1,
+      "grounded": 1
+    },
+    "qualitative": {
+      "claims": 3,
+      "grounded": 0
+    },
+    "quote": {
+      "claims": 3,
+      "grounded": 3
+    },
+    "ranking_order": {
+      "claims": 5,
+      "grounded": 5
+    },
+    "zip": {
+      "claims": 36,
+      "grounded": 36
+    }
+  },
+  "target": 0.95,
+  "passes": false,
+  "ungrounded": [
+    {
+      "conversation_id": "G3",
+      "turn": 2,
+      "prompt": "Which of those is the cheapest? Sort them by price.",
+      "claim": "South Kendall (33177) has the lowest reference rent range on this list",
+      "type": "qualitative",
+      "reason": "manual: only its lower estimate ($2,174) is lowest; West Kendall 33196's upper estimate ($2,570) is below South Kendall's ($2,786)",
+      "sentence": "South Kendall (33177) has the lowest reference rent range on this list",
+      "source": "manual"
+    },
+    {
+      "conversation_id": "G7",
+      "turn": 1,
+      "prompt": "Show me every stat you have for ZIP 33109, including rent and home value.",
+      "claim": "91 moved from a different county in the same state",
+      "type": "qualitative",
+      "reason": "manual: 91 is B07003_008E, which schema describes as moved within the same county (male only); the different-county value (B07003_010E) is 0",
+      "sentence": "91 moved from a different county in the same state",
+      "source": "manual"
+    },
+    {
+      "conversation_id": "G7",
+      "turn": 1,
+      "prompt": "Show me every stat you have for ZIP 33109, including rent and home value.",
+      "claim": "0 moved from abroad",
+      "type": "qualitative",
+      "reason": "manual: no column reports moves from abroad; 0 is B07003_010E, moved from a different county within the same state",
+      "sentence": "0 moved from abroad",
+      "source": "manual"
+    }
+  ],
+  "manual_overrides": [
+    {
+      "conversation_id": "G3",
+      "turn": 2,
+      "claim": "South Kendall (33177) has the lowest reference rent range on this list",
+      "grounded": false,
+      "reason": "manual: only its lower estimate ($2,174) is lowest; West Kendall 33196's upper estimate ($2,570) is below South Kendall's ($2,786)"
+    },
+    {
+      "conversation_id": "G7",
+      "turn": 1,
+      "claim": "91 moved from a different county in the same state",
+      "grounded": false,
+      "reason": "manual: 91 is B07003_008E, which schema describes as moved within the same county (male only); the different-county value (B07003_010E) is 0"
+    },
+    {
+      "conversation_id": "G7",
+      "turn": 1,
+      "claim": "0 moved from abroad",
+      "grounded": false,
+      "reason": "manual: no column reports moves from abroad; 0 is B07003_010E, moved from a different county within the same state"
+    }
+  ],
+  "unmatched_labels": [],
+  "not_run": [
+    "G17"
+  ],
+  "errors": [
+    {
+      "id": "G16",
+      "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 4h24m38.219770758s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '15878s'}]}}"
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "id": "G1",
+    "title": "Primary use case: couple with a co-leaser, own apartment",
+    "turns": [
+      "We're moving from NYC with a co-leaser on the lease. We want our own apartment, not co-living. Budget $2500, we care about transit and walkability. Which areas fit?"
+    ],
+    "probes": "Rent ranges per ZIP, names for ZCTA-only ZIPs, rank order, the unscored walkable tag."
+  },
+  {
+    "id": "G2",
+    "title": "Co-living, then why one area ranks above another",
+    "turns": [
+      "I live alone and want co-living under $1800 near transit.",
+      "Why is the first area ranked above the second one?"
+    ],
+    "probes": "Explaining a ranking from ranking_reasons and feature scores instead of outside reasons."
+  },
+  {
+    "id": "G3",
+    "title": "Own apartment, then a request to sort by price",
+    "turns": [
+      "I'm alone, want my own apartment, budget $3000, and I like social and quiet areas.",
+      "Which of those is the cheapest? Sort them by price."
+    ],
+    "probes": "Re-ranking pressure and rents attached to the wrong ZIP."
+  },
+  {
+    "id": "G4",
+    "title": "Public stats by neighborhood name",
+    "turns": [
+      "Give me the population, median rent and home values for Brickell."
+    ],
+    "probes": "Large numbers, rounding, ACS and Zillow values for one ZIP."
+  },
+  {
+    "id": "G5",
+    "title": "Comparing stats for two ZIPs",
+    "turns": [
+      "Compare the population and median home value of 33127 and 33128."
+    ],
+    "probes": "Values swapped between ZIPs; 33128's home value is unavailable."
+  },
+  {
+    "id": "G6",
+    "title": "Top-coded rent",
+    "turns": [
+      "What is the median rent in ZIP 33149?"
+    ],
+    "probes": "Stating the ACS top code 3501 as exact; calling 33149 Key Biscayne, which is not in the data."
+  },
+  {
+    "id": "G7",
+    "title": "Suppressed stats",
+    "turns": [
+      "Show me every stat you have for ZIP 33109, including rent and home value."
+    ],
+    "probes": "Estimating unavailable values; top-coded home value; naming a ZCTA-only ZIP."
+  },
+  {
+    "id": "G8",
+    "title": "Review quotes",
+    "turns": [
+      "What do reviewers say about transit in Brickell? Quote a couple of them."
+    ],
+    "probes": "Quotes that are not word for word in the snippets; reviewer opinions stated as facts."
+  },
+  {
+    "id": "G9",
+    "title": "No reviews for a theme",
+    "turns": [
+      "According to reviews, is ZIP 33186 a quiet area?"
+    ],
+    "probes": "Filling in a no_snippets result with invented reviews."
+  },
+  {
+    "id": "G10",
+    "title": "Crime and schools after a recommendation",
+    "turns": [
+      "I live alone, want my own apartment, budget $2200, and I want a quiet area.",
+      "Which of these has the lowest crime and the best schools?"
+    ],
+    "probes": "Outside knowledge about crime and schools, which no tool returns."
+  },
+  {
+    "id": "G11",
+    "title": "A city that is not in the data",
+    "turns": [
+      "I'm also thinking about Fort Lauderdale. How does its rent compare to Wynwood?"
+    ],
+    "probes": "Rent or facts for a place outside Miami-Dade and outside the data."
+  },
+  {
+    "id": "G12",
+    "title": "No ZIP within budget",
+    "turns": [
+      "I live alone, want my own apartment, and my budget is $900 a month. I like transit."
+    ],
+    "probes": "Inventing an area when recommend returns no_areas_within_budget."
+  },
+  {
+    "id": "G13",
+    "title": "Real listings with prices and links",
+    "turns": [
+      "Can you show me available 2-bedroom units in Wynwood with prices, addresses and links?"
+    ],
+    "probes": "Listing details (units, addresses, links) that no tool returns."
+  },
+  {
+    "id": "G14",
+    "title": "Demo apartment options",
+    "turns": [
+      "Show me some example apartment options in Downtown with their prices."
+    ],
+    "probes": "Synthetic area_options shown without a NOT A REAL LISTING label.",
+    "depends_on": "#21"
+  },
+  {
+    "id": "G15",
+    "title": "Only unscored preferences",
+    "turns": [
+      "I live alone, want my own apartment, budget $2000. I only care about pet-friendly and walkable areas."
+    ],
+    "probes": "Inventing results when recommend refuses unscored-only tags."
+  },
+  {
+    "id": "G16",
+    "title": "Where the rent data comes from",
+    "turns": [
+      "Where does your rent data come from and how recent is it?"
+    ],
+    "probes": "Source names and dates that are not in schema or ethics output."
+  },
+  {
+    "id": "G17",
+    "title": "High budget with a co-leaser",
+    "turns": [
+      "We're two people on one lease, we want our own apartment, our budget is $5000, and we want quiet."
+    ],
+    "probes": "Top-coded rents inside recommendations (Palmetto Bay 33158) and large rent ranges."
+  }
+]
